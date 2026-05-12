@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: oer-navigator-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DWGD_API_KEY
+        sync: false
+      - key: DWGD_MODEL
+        value: meta-llama-3.1-70b-instruct
+      - key: OLLAMA_MODEL
+        value: llama3.3:70b

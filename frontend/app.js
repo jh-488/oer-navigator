@@ -1,4 +1,4 @@
-const API = "http://localhost:8000";
+const API = API_BASE_URL;
 
 let state = {
   classification: null,
