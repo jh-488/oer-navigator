@@ -25,11 +25,32 @@ const profileSection = document.getElementById("profile-section");
 const profileTags = document.getElementById("profile-tags");
 const providerBadge = document.getElementById("provider-badge");
 const personaAvatar = document.getElementById("persona-avatar");
+const brandMascot = document.getElementById("brand-mascot");
 const resultsSection = document.getElementById("results-section");
 const resultsContainer = document.getElementById("results-container");
 const viewLabel = document.getElementById("view-label");
 const loading = document.getElementById("loading");
 const errorBanner = document.getElementById("error-banner");
+
+// --- Brand mascot state animation ---
+function setMascotState(s) {
+  if (!brandMascot) return;
+  brandMascot.classList.remove("m-idle", "m-loading", "m-eureka", "m-sleep");
+  brandMascot.classList.add("m-" + s);
+  if (s === "loading") {
+    brandMascot.style.animation = "lali-spin 1.4s linear infinite";
+  } else if (s === "eureka") {
+    brandMascot.style.animation = "lali-pop 0.5s ease-out 1";
+    brandMascot.style.transform = "scale(1.05)";
+  } else if (s === "sleep") {
+    brandMascot.style.animation = "none";
+    brandMascot.style.opacity = "0.7";
+  } else {
+    brandMascot.style.animation = "none";
+    brandMascot.style.opacity = "1";
+    brandMascot.style.transform = "scale(1)";
+  }
+}
 
 // --- Event listeners ---
 searchForm.addEventListener("submit", async (e) => {
@@ -131,6 +152,8 @@ async function runSearch() {
     state.lastVisualization = res.visualization;
     renderResults(res);
     show(resultsSection);
+    setMascotState(state.lastResults.length ? "eureka" : "sleep");
+    setTimeout(() => setMascotState("idle"), 1500);
     resultsSection.scrollIntoView({ behavior: "smooth" });
   } catch (err) {
     showError(err.message);
@@ -202,6 +225,7 @@ function showClarification(question) {
     question.optionen.forEach((opt) => {
       const btn = document.createElement("button");
       btn.className = "option-btn";
+      btn.type = "button";
       btn.textContent = opt;
       btn.addEventListener("click", () => {
         document.querySelectorAll(".option-btn").forEach((b) => b.classList.remove("selected"));
@@ -253,10 +277,10 @@ function updateProfile(clf, provider) {
   if (clf.language) tags.push(clf.language === "de" ? "Deutsch" : clf.language === "en" ? "Englisch" : clf.language);
 
   profileTags.innerHTML = tags
-    .map((t) => `<span class="profile-tag">${t}</span>`)
+    .map((t) => `<span class="profile-tag">${escHtml(t)}</span>`)
     .join("");
   if (provider) {
-    providerBadge.textContent = `KI: ${provider}`;
+    providerBadge.textContent = `KI · ${provider}`;
     providerBadge.classList.remove("hidden");
   }
   updatePersonaAvatar(clf);
@@ -332,7 +356,7 @@ function makeFacetGroup(label, values) {
   values.forEach((v) => {
     const item = document.createElement("label");
     item.className = "facet-item";
-    item.innerHTML = `<input type="checkbox" /> ${v}`;
+    item.innerHTML = `<input type="checkbox" /> <span>${escHtml(v)}</span>`;
     group.appendChild(item);
   });
   return group;
@@ -394,14 +418,16 @@ function renderGraph(items) {
         .on("end", (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
 
     nodeEnter.append("circle")
-      .attr("r", (d) => d.isCenter ? 18 : 10)
-      .style("fill", (d) => d.isCenter ? "#1d4ed8" : d.expanded ? "#6366f1" : "var(--primary)")
+      .attr("r", (d) => d.isCenter ? 20 : 12)
+      .style("fill", (d) => d.isCenter ? "#9ee64a" : d.expanded ? "#ffd23f" : "#ff6049")
+      .style("stroke", "#142a2a")
+      .style("stroke-width", "2.5px")
       .style("cursor", (d) => d.isCenter ? "default" : "pointer")
       .on("click", async (e, d) => {
         e.stopPropagation();
         if (d.isCenter || d.expanded) return;
         d.expanded = true;
-        d3.select(e.currentTarget).style("fill", "#6366f1");
+        d3.select(e.currentTarget).style("fill", "#ffd23f");
 
         try {
           const res = await post("/search", {
@@ -423,20 +449,19 @@ function renderGraph(items) {
       });
 
     nodeEnter.append("text")
-      .attr("dy", (d) => d.isCenter ? 32 : 22)
+      .attr("dy", (d) => d.isCenter ? 36 : 26)
       .attr("text-anchor", "middle")
-      .style("font-size", (d) => d.isCenter ? "0.8rem" : "0.7rem")
+      .style("font-size", (d) => d.isCenter ? "0.85rem" : "0.72rem")
       .text((d) => d.name);
 
-    // External link icon — always opens the URL, independent of expand
     nodeEnter.filter((d) => !d.isCenter && d.url && d.url !== "#")
       .append("text")
-      .attr("dy", -12)
-      .attr("dx", 10)
+      .attr("dy", -14)
+      .attr("dx", 12)
       .attr("text-anchor", "middle")
-      .style("font-size", "0.65rem")
+      .style("font-size", "0.7rem")
       .style("cursor", "pointer")
-      .style("fill", "var(--muted)")
+      .style("fill", "#142a2a")
       .text("↗")
       .on("click", (e, d) => {
         e.stopPropagation();
@@ -476,7 +501,7 @@ function makeCard(item, cardStyle) {
   card.innerHTML = `
     <button class="card-remove" type="button" title="Dieses und ähnliche Ergebnisse entfernen" aria-label="Entfernen">×</button>
     <h3><a href="${url}" target="_blank" rel="noopener">${escHtml(name)}</a></h3>
-    ${desc ? `<p class="desc">${escHtml(truncate(desc, 160))}</p>` : ""}
+    ${desc ? `<p class="desc">${escHtml(truncate(desc, 180))}</p>` : ""}
     <div class="meta">
       ${lang ? `<span class="meta-tag">${escHtml(lang)}</span>` : ""}
       ${format ? `<span class="meta-tag">${escHtml(format)}</span>` : ""}
@@ -502,14 +527,24 @@ function truncate(str, n) {
 
 function setLoading(on) {
   searchBtn.disabled = on;
-  on ? show(loading) : hide(loading);
+  if (on) {
+    show(loading);
+    setMascotState("loading");
+  } else {
+    hide(loading);
+    setMascotState("idle");
+  }
 }
 
 function showError(msg) {
   errorBanner.textContent = "Fehler: " + msg;
   show(errorBanner);
+  setMascotState("sleep");
 }
 
 function hideError() { hide(errorBanner); }
 function show(el) { el.classList.remove("hidden"); }
 function hide(el) { el.classList.add("hidden"); }
+
+// Initial state
+setMascotState("idle");
