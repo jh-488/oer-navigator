@@ -118,6 +118,14 @@ button:disabled { background: var(--muted); cursor: not-allowed; }
   box-shadow: var(--shadow);
 }
 .profile-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+.provider-badge {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--border);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+}
 .profile-tag {
   background: var(--tag-bg);
   color: var(--tag-text);

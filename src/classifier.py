@@ -112,6 +112,7 @@ def classify(query: str) -> dict:
     examples = _load_few_shot_examples()
     prompt = _build_prompt(query, examples)
     raw = None
+    provider = None
     last_error = None
 
     # --- DWGD chat-ai (OpenAI-compatible endpoint) ---
@@ -120,6 +121,7 @@ def classify(query: str) -> dict:
             logger.info("classify: trying DWGD model=%s", DWGD_MODEL)
             dwgd = OpenAI(api_key=DWGD_API_KEY, base_url=DWGD_BASE_URL)
             raw = _chat_json(dwgd, DWGD_MODEL, prompt)
+            provider = "DWGD"
             logger.info("classify: succeeded with DWGD model=%s", DWGD_MODEL)
         except Exception as e:
             logger.warning("classify: DWGD model=%s failed: %s", DWGD_MODEL, e)
@@ -133,6 +135,7 @@ def classify(query: str) -> dict:
             logger.info("classify: falling back to Ollama model=%s at %s", OLLAMA_MODEL, OLLAMA_URL)
             ollama = OpenAI(api_key="ollama", base_url=f"{OLLAMA_URL}/v1")
             raw = _chat_json(ollama, OLLAMA_MODEL, prompt)
+            provider = f"Ollama ({OLLAMA_MODEL})"
             logger.info("classify: succeeded with Ollama model=%s", OLLAMA_MODEL)
         except Exception as e:
             logger.warning("classify: Ollama model=%s failed: %s", OLLAMA_MODEL, e)
@@ -145,6 +148,7 @@ def classify(query: str) -> dict:
             try:
                 logger.info("classify: trying Gemini model=%s", model)
                 raw = _chat_json(gemini, model, prompt)
+                provider = f"Gemini ({model})"
                 logger.info("classify: succeeded with Gemini model=%s", model)
                 break
             except Exception as e:
@@ -160,6 +164,7 @@ def classify(query: str) -> dict:
 
     result = json.loads(raw)
     result["unclear_axes"] = _find_unclear_axes(result)
+    result["provider"] = provider
     return result
 
 

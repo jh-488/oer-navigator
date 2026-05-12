@@ -61,7 +61,7 @@ def classify_query(req: QueryRequest):
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"LLM nicht erreichbar: {e}")
     question = get_next_question(result) if needs_clarification(result) else None
-    return {"classification": result, "clarification_needed": question is not None, "question": question}
+    return {"classification": result, "clarification_needed": question is not None, "question": question, "provider": result.get("provider")}
 
 
 @app.post("/clarify")
