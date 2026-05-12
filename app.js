@@ -333,7 +333,12 @@ function renderFaceted(items) {
     const lrt = i.learningResourceType || [];
     return lrt.map((l) => l?.prefLabel?.de || l?.prefLabel?.en || "").filter(Boolean);
   }))];
-  const langs = [...new Set(items.map((i) => i.inLanguage).filter(Boolean))];
+  const langCodes = [...new Set(items.flatMap((i) => {
+    const v = i.inLanguage;
+    return Array.isArray(v) ? v : v ? [v] : [];
+  }).filter(Boolean))];
+  const langLabels = { de: "Deutsch", en: "Englisch", fr: "Französisch", es: "Spanisch" };
+  const langs = langCodes.map((c) => langLabels[c] || c);
 
   if (formats.length) sidebar.appendChild(makeFacetGroup("Format", formats));
   if (langs.length) sidebar.appendChild(makeFacetGroup("Sprache", langs));
