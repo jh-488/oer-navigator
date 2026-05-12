@@ -8,8 +8,11 @@ window.addEventListener("DOMContentLoaded", () => {
     new MutationObserver((muts) => {
       muts.forEach((m) => {
         if (m.type === "childList") {
-          console.log("[mutation] results-container childList: +", m.addedNodes.length, "-", m.removedNodes.length, "now:", target.children.length);
+          const added = Array.from(m.addedNodes).map((n) => n.nodeName + (n.id ? "#" + n.id : "") + (n.className ? "." + String(n.className).split(" ").join(".") : "") + (n.textContent ? ` text="${n.textContent.slice(0, 60)}"` : ""));
+          const removed = Array.from(m.removedNodes).map((n) => n.nodeName + (n.className ? "." + String(n.className).split(" ").join(".") : ""));
+          console.log("[mutation] results-container childList: +", m.addedNodes.length, "-", m.removedNodes.length, "now:", target.children.length, "added:", added, "removed:", removed);
           if (m.removedNodes.length > 0) console.trace("[mutation] removal stack");
+          if (m.addedNodes.length > 0) console.trace("[mutation] addition stack");
         }
       });
     }).observe(target, { childList: true });
@@ -31,6 +34,11 @@ let state = {
   classification: null,
   currentAxis: null,
   selectedOption: null,
+  lastResults: [],
+  lastVisualization: null,
+  negativeKeywords: [],
+  excludeIds: [],
+  refining: false,
 };
 
 // --- DOM refs ---
@@ -101,6 +109,9 @@ async function runClassify(query) {
   hide(profileSection);
   resultsContainer.innerHTML = "";
   hide(resultsSection);
+  state.negativeKeywords = [];
+  state.excludeIds = [];
+  state.lastResults = [];
 
   try {
     const res = await post("/classify", { query });
@@ -161,8 +172,15 @@ async function runSearch() {
   console.log("[runSearch] START", { classification: state.classification });
   setLoading(true);
   try {
-    const res = await post("/search", { classification: state.classification, size: 12 });
+    const res = await post("/search", {
+      classification: state.classification,
+      size: 12,
+      negative_keywords: state.negativeKeywords,
+      exclude_ids: state.excludeIds,
+    });
     console.log("[runSearch] response", { total: res.total, viz: res.visualization?.id, results: res.results });
+    state.lastResults = res.results || [];
+    state.lastVisualization = res.visualization;
     renderResults(res);
     show(resultsSection);
     console.log("[runSearch] results section shown, container children:", resultsContainer.children.length);
@@ -179,6 +197,65 @@ async function runSearch() {
   } finally {
     setLoading(false);
     console.log("[runSearch] END");
+  }
+}
+
+async function runRefine(rejected, cardEl) {
+  if (state.refining) {
+    console.warn("[runRefine] IGNORED — already refining", { rejected: rejected?.name });
+    return;
+  }
+  state.refining = true;
+  console.log("[runRefine] START", { rejected: rejected?.name, t: performance.now().toFixed(1) });
+  console.trace("[runRefine] caller");
+  if (cardEl) cardEl.classList.add("removing");
+  setLoading(true);
+  hideError();
+  try {
+    const res = await post("/refine", {
+      classification: state.classification,
+      rejected,
+      candidates: state.lastResults,
+      size: 12,
+      prior_negative_keywords: state.negativeKeywords,
+      prior_exclude_ids: state.excludeIds,
+    });
+    console.log("[runRefine] response", {
+      total: res.total,
+      results_len: (res.results || []).length,
+      first_name: (res.results || [])[0]?.name,
+      viz_id: res.visualization?.id,
+      similar_ids: res.similar_ids,
+      negative_keywords: res.negative_keywords,
+      exclude_ids: res.exclude_ids,
+      thema_refined: res.thema_refined,
+      classification_thema: res.classification?.thema,
+    });
+
+    if (res.classification) {
+      state.classification = res.classification;
+      updateProfile(res.classification);
+    }
+    state.negativeKeywords = res.negative_keywords || [];
+    state.excludeIds = res.exclude_ids || [];
+    state.lastResults = res.results || [];
+    state.lastVisualization = res.visualization;
+
+    // Defer the re-render past the current event cycle so the lingering
+    // pointer/click events from the X button can't land on the freshly-rendered
+    // card at the same screen coordinates.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    renderResults(res);
+    show(resultsSection);
+    resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    console.error("[runRefine] error", err);
+    if (cardEl) cardEl.classList.remove("removing");
+    showError(err.message);
+  } finally {
+    setLoading(false);
+    state.refining = false;
+    console.log("[runRefine] END");
   }
 }
 
@@ -237,6 +314,9 @@ function updateProfile(clf) {
 
 function renderResults(res) {
   const viz = res.visualization;
+  const items = res.results || [];
+  console.log("[renderResults] START", { viz_id: viz?.id, items_len: items.length, first: items[0]?.name });
+  console.trace("[renderResults] caller");
   viewLabel.textContent = `Ansicht: ${viz.name}`;
   resultsContainer.className = "";
   resultsContainer.innerHTML = "";
@@ -244,14 +324,15 @@ function renderResults(res) {
   const intention = state.classification?.intention || "orientieren";
 
   if (viz.id === "V3") {
-    renderCards(res.results);
+    renderCards(items);
   } else if (viz.id === "V4") {
-    renderFaceted(res.results);
+    renderFaceted(items);
   } else if (viz.id === "V5") {
-    renderGraph(res.results);
+    renderGraph(items);
   } else {
-    renderList(res.results);
+    renderList(items);
   }
+  console.log("[renderResults] END", { container_children: resultsContainer.children.length });
 }
 
 function renderList(items) {
@@ -380,6 +461,7 @@ function makeCard(item, cardStyle) {
   const license = item.license?.id || item.license || "";
 
   card.innerHTML = `
+    <button class="card-remove" type="button" title="Dieses und ähnliche Ergebnisse entfernen" aria-label="Entfernen">×</button>
     <h3><a href="${url}" target="_blank" rel="noopener">${escHtml(name)}</a></h3>
     ${desc ? `<p class="desc">${escHtml(truncate(desc, 160))}</p>` : ""}
     <div class="meta">
@@ -388,6 +470,18 @@ function makeCard(item, cardStyle) {
       ${license ? `<span class="meta-tag">${escHtml(truncate(license, 30))}</span>` : ""}
     </div>
   `;
+  card.querySelector(".card-remove").addEventListener("click", (e) => {
+    console.log("[card-remove click]", {
+      isTrusted: e.isTrusted,
+      item: item?.name,
+      t: performance.now().toFixed(1),
+      refining: state.refining,
+    });
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    runRefine(item, card);
+  }, { once: true });
   return card;
 }
 

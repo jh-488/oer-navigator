@@ -13,6 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 from src.classifier import classify, needs_clarification
 from src.clarifier import apply_answer, get_next_question
 from src.oersi_client import simple_search
+from src.similarity import refine_after_rejection
 
 TWILLO_PATH = Path(__file__).parent.parent / "data" / "twillo_corpus.json"
 TAXONOMY_PATH = Path(__file__).parent.parent / "data" / "situations_taxonomy.json"
@@ -40,6 +41,17 @@ class ClarifyRequest(BaseModel):
 class SearchRequest(BaseModel):
     classification: dict
     size: int = 10
+    negative_keywords: list[str] | None = None
+    exclude_ids: list[str] | None = None
+
+
+class RefineRequest(BaseModel):
+    classification: dict
+    rejected: dict
+    candidates: list[dict]
+    size: int = 12
+    prior_negative_keywords: list[str] | None = None
+    prior_exclude_ids: list[str] | None = None
 
 
 @app.post("/classify")
@@ -71,10 +83,19 @@ def search(req: SearchRequest):
         search_text = f"{thema} {format_preferred}".strip()
 
     try:
-        raw = simple_search(search_text, size=req.size, lang=language)
+        raw = simple_search(
+            search_text,
+            size=req.size,
+            lang=language,
+            negative_keywords=req.negative_keywords,
+            exclude_ids=req.exclude_ids,
+        )
         hits = [h["_source"] for h in raw["hits"]["hits"]]
     except Exception:
         hits = _fallback_search(search_text, req.size)
+        if req.exclude_ids:
+            excl = set(req.exclude_ids)
+            hits = [h for h in hits if (h.get("id") or h.get("@id")) not in excl]
 
     visualization = _get_visualization(clf.get("intention", "orientieren"))
 
@@ -83,6 +104,65 @@ def search(req: SearchRequest):
         "visualization": visualization,
         "total": len(hits),
         "source": "oersi",
+    }
+
+
+@app.post("/refine")
+def refine(req: RefineRequest):
+    """User rejected a result. Identify similar items via LLM, refine the search,
+    and return the new result set plus the metadata needed to keep refining."""
+    try:
+        refinement = refine_after_rejection(
+            req.rejected, req.candidates, req.classification
+        )
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"LLM-Verfeinerung fehlgeschlagen: {e}")
+
+    clf = dict(req.classification)
+    if refinement.get("thema_refined"):
+        clf["thema"] = refinement["thema_refined"]
+
+    negative_keywords = list(req.prior_negative_keywords or [])
+    for kw in refinement.get("negative_keywords") or []:
+        if kw and kw not in negative_keywords:
+            negative_keywords.append(kw)
+
+    exclude_ids = list(req.prior_exclude_ids or [])
+    for rid in refinement.get("similar_ids") or []:
+        if rid and rid not in exclude_ids:
+            exclude_ids.append(rid)
+
+    thema = clf.get("thema") or ""
+    format_preferred = clf.get("format_preferred")
+    search_text = f"{thema} {format_preferred}".strip() if format_preferred else thema
+    language = clf.get("language")
+
+    try:
+        raw = simple_search(
+            search_text,
+            size=req.size,
+            lang=language,
+            negative_keywords=negative_keywords,
+            exclude_ids=exclude_ids,
+        )
+        hits = [h["_source"] for h in raw["hits"]["hits"]]
+    except Exception:
+        hits = _fallback_search(search_text, req.size)
+        excl = set(exclude_ids)
+        hits = [h for h in hits if (h.get("id") or h.get("@id")) not in excl]
+
+    visualization = _get_visualization(clf.get("intention", "orientieren"))
+
+    return {
+        "results": hits,
+        "visualization": visualization,
+        "total": len(hits),
+        "source": "oersi",
+        "classification": clf,
+        "similar_ids": refinement.get("similar_ids", []),
+        "negative_keywords": negative_keywords,
+        "exclude_ids": exclude_ids,
+        "thema_refined": refinement.get("thema_refined"),
     }
 
 

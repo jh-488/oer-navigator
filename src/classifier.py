@@ -11,13 +11,18 @@ from openai import OpenAI
 logger = logging.getLogger(__name__)
 
 load_dotenv(Path(__file__).parent.parent / ".env")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
-GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
-GEMINI_MODEL = "gemini-2.5-flash-lite"
-GEMINI_FALLBACK_MODEL = "gemini-2.0-flash-lite"
+
+DWGD_API_KEY = os.getenv("DWGD_API_KEY", "")
+DWGD_BASE_URL = "https://chat-ai.academiccloud.de/v1"
+DWGD_MODEL = os.getenv("DWGD_MODEL", "meta-llama-3.1-70b-instruct")
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
+GEMINI_FALLBACK_MODEL = "gemini-2.0-flash-lite"
 
 EVAL_CORPUS_PATH = Path(__file__).parent.parent / "data" / "eval_corpus.json"
 
@@ -101,36 +106,54 @@ def _chat_json(client: OpenAI, model: str, prompt: str) -> str:
 def classify(query: str) -> dict:
     """Classify a natural-language OER search query.
 
-    Tries Gemini models first, falls back to local Ollama if all Gemini calls fail.
-    Both providers are accessed via their OpenAI-compatible endpoints.
+    Provider order: DWGD (chat-ai.academiccloud.de) → local Ollama → Gemini.
+    All providers are accessed via their OpenAI-compatible endpoints.
     """
     examples = _load_few_shot_examples()
     prompt = _build_prompt(query, examples)
     raw = None
     last_error = None
 
-    # --- Gemini (OpenAI-compatible endpoint) ---
-    gemini = OpenAI(api_key=GEMINI_API_KEY, base_url=GEMINI_BASE_URL)
-    for model in (GEMINI_MODEL, GEMINI_FALLBACK_MODEL):
+    # --- DWGD chat-ai (OpenAI-compatible endpoint) ---
+    if DWGD_API_KEY:
         try:
-            logger.info("classify: trying Gemini model=%s", model)
-            raw = _chat_json(gemini, model, prompt)
-            logger.info("classify: succeeded with Gemini model=%s", model)
-            break
+            logger.info("classify: trying DWGD model=%s", DWGD_MODEL)
+            dwgd = OpenAI(api_key=DWGD_API_KEY, base_url=DWGD_BASE_URL)
+            raw = _chat_json(dwgd, DWGD_MODEL, prompt)
+            logger.info("classify: succeeded with DWGD model=%s", DWGD_MODEL)
         except Exception as e:
-            logger.warning("classify: Gemini model=%s failed: %s", model, e)
+            logger.warning("classify: DWGD model=%s failed: %s", DWGD_MODEL, e)
             last_error = e
+    else:
+        logger.info("classify: DWGD_API_KEY not set, skipping DWGD")
 
     # --- Ollama fallback (OpenAI-compatible endpoint) ---
-    if raw is None:
-        if _ollama_available():
+    if raw is None and _ollama_available():
+        try:
             logger.info("classify: falling back to Ollama model=%s at %s", OLLAMA_MODEL, OLLAMA_URL)
             ollama = OpenAI(api_key="ollama", base_url=f"{OLLAMA_URL}/v1")
             raw = _chat_json(ollama, OLLAMA_MODEL, prompt)
             logger.info("classify: succeeded with Ollama model=%s", OLLAMA_MODEL)
-        else:
-            logger.error("classify: Ollama unavailable at %s, no fallback possible", OLLAMA_URL)
-            raise last_error
+        except Exception as e:
+            logger.warning("classify: Ollama model=%s failed: %s", OLLAMA_MODEL, e)
+            last_error = e
+
+    # --- Gemini fallback (OpenAI-compatible endpoint) ---
+    if raw is None and GEMINI_API_KEY:
+        gemini = OpenAI(api_key=GEMINI_API_KEY, base_url=GEMINI_BASE_URL)
+        for model in (GEMINI_MODEL, GEMINI_FALLBACK_MODEL):
+            try:
+                logger.info("classify: trying Gemini model=%s", model)
+                raw = _chat_json(gemini, model, prompt)
+                logger.info("classify: succeeded with Gemini model=%s", model)
+                break
+            except Exception as e:
+                logger.warning("classify: Gemini model=%s failed: %s", model, e)
+                last_error = e
+
+    if raw is None:
+        logger.error("classify: all providers failed")
+        raise last_error if last_error else RuntimeError("No LLM provider available")
 
     raw = re.sub(r"^```(?:json)?\n?", "", raw)
     raw = re.sub(r"\n?```$", "", raw)
