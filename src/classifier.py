@@ -82,7 +82,7 @@ Ausgabe:"""
 
 def _ollama_available() -> bool:
     try:
-        with urllib.request.urlopen(f"{OLLAMA_URL}/api/tags", timeout=2) as r:
+        with urllib.request.urlopen(f"{OLLAMA_URL}/api/tags", timeout=20) as r:
             return r.status == 200
     except Exception:
         return False

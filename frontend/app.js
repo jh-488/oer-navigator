@@ -1,5 +1,32 @@
 const API = "http://localhost:8000";
 
+// Watch the results container for being cleared/hidden by any code path
+window.addEventListener("DOMContentLoaded", () => {
+  const target = document.getElementById("results-container");
+  const section = document.getElementById("results-section");
+  if (target) {
+    new MutationObserver((muts) => {
+      muts.forEach((m) => {
+        if (m.type === "childList") {
+          console.log("[mutation] results-container childList: +", m.addedNodes.length, "-", m.removedNodes.length, "now:", target.children.length);
+          if (m.removedNodes.length > 0) console.trace("[mutation] removal stack");
+        }
+      });
+    }).observe(target, { childList: true });
+  }
+  if (section) {
+    new MutationObserver((muts) => {
+      muts.forEach((m) => {
+        if (m.attributeName === "class") {
+          const hidden = section.classList.contains("hidden");
+          console.log("[mutation] results-section class changed, hidden=", hidden);
+          if (hidden) console.trace("[mutation] hide stack");
+        }
+      });
+    }).observe(section, { attributes: true, attributeFilter: ["class"] });
+  }
+});
+
 let state = {
   classification: null,
   currentAxis: null,
@@ -25,6 +52,7 @@ const errorBanner = document.getElementById("error-banner");
 
 // --- Event listeners ---
 searchForm.addEventListener("submit", async (e) => {
+  console.log("[evt] form submit", { isTrusted: e.isTrusted, cancelable: e.cancelable, submitter: e.submitter });
   e.preventDefault();
   const query = queryInput.value.trim();
   if (!query || searchBtn.disabled) return;
@@ -34,23 +62,39 @@ searchForm.addEventListener("submit", async (e) => {
 // Enter in textarea submits, Shift+Enter adds newline
 queryInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
+    console.log("[evt] textarea Enter -> requestSubmit");
     e.preventDefault();
-    searchForm.dispatchEvent(new Event("submit"));
+    searchForm.requestSubmit();
   }
 });
 
-clarificationSubmit.addEventListener("click", async () => {
+clarificationSubmit.addEventListener("click", async (e) => {
+  console.log("[evt] clarificationSubmit click", { isTrusted: e.isTrusted });
   const answer = state.selectedOption || clarificationFree.value.trim();
   if (!answer) return;
   await runClarify(state.currentAxis, answer);
 });
 
 clarificationFree.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") clarificationSubmit.click();
+  if (e.key === "Enter") {
+    console.log("[evt] clarificationFree Enter");
+    e.preventDefault();
+    clarificationSubmit.click();
+  }
+});
+
+window.addEventListener("beforeunload", (e) => {
+  console.warn("[evt] BEFOREUNLOAD — page is about to reload/navigate!");
+});
+
+window.addEventListener("pagehide", () => {
+  console.warn("[evt] PAGEHIDE");
 });
 
 // --- API calls ---
 async function runClassify(query) {
+  console.log("[runClassify] START — clearing results", { query });
+  console.trace("[runClassify] call stack");
   setLoading(true);
   hideError();
   hide(clarificationSection);
@@ -60,22 +104,29 @@ async function runClassify(query) {
 
   try {
     const res = await post("/classify", { query });
+    console.log("[runClassify] response", res);
     state.classification = res.classification;
     updateProfile(res.classification);
 
     if (res.clarification_needed) {
+      console.log("[runClassify] -> showClarification");
       showClarification(res.question);
     } else {
+      console.log("[runClassify] -> runSearch");
       await runSearch();
     }
   } catch (err) {
+    console.error("[runClassify] error", err);
     showError(err.message);
   } finally {
     setLoading(false);
+    console.log("[runClassify] END");
   }
 }
 
 async function runClarify(axis, answer) {
+  console.log("[runClarify] START", { axis, answer });
+  console.trace("[runClarify] call stack");
   setLoading(true);
   hideError();
   hide(clarificationSection);
@@ -86,33 +137,48 @@ async function runClarify(axis, answer) {
       axis,
       answer,
     });
+    console.log("[runClarify] response", res);
     state.classification = res.classification;
     updateProfile(res.classification);
 
     if (res.clarification_needed) {
+      console.log("[runClarify] -> showClarification");
       showClarification(res.question);
     } else {
+      console.log("[runClarify] -> runSearch");
       await runSearch();
     }
   } catch (err) {
+    console.error("[runClarify] error", err);
     showError(err.message);
   } finally {
     setLoading(false);
+    console.log("[runClarify] END");
   }
 }
 
 async function runSearch() {
+  console.log("[runSearch] START", { classification: state.classification });
   setLoading(true);
   try {
     const res = await post("/search", { classification: state.classification, size: 12 });
-    console.log("Search results:", res);
+    console.log("[runSearch] response", { total: res.total, viz: res.visualization?.id, results: res.results });
     renderResults(res);
     show(resultsSection);
+    console.log("[runSearch] results section shown, container children:", resultsContainer.children.length);
     resultsSection.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => {
+      console.log("[runSearch] +500ms check — results visible?", !resultsSection.classList.contains("hidden"), "children:", resultsContainer.children.length);
+    }, 500);
+    setTimeout(() => {
+      console.log("[runSearch] +2000ms check — results visible?", !resultsSection.classList.contains("hidden"), "children:", resultsContainer.children.length);
+    }, 2000);
   } catch (err) {
+    console.error("[runSearch] error", err);
     showError(err.message);
   } finally {
     setLoading(false);
+    console.log("[runSearch] END");
   }
 }
 
