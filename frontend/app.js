@@ -244,7 +244,7 @@ function renderResults(res) {
     renderCards(items);
   } else if (viz.id === "V4") {
     renderFaceted(items);
-  } else if (viz.id === "V5") {
+  } else if (viz.id === "V1" || viz.id === "V2" || viz.id === "V5") {
     renderGraph(items);
   } else {
     renderList(items);
