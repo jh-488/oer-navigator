@@ -1,16 +1,20 @@
 import json
+import logging
 import os
 import re
 import urllib.request
 from pathlib import Path
 
 from dotenv import load_dotenv
-from google import genai
+from openai import OpenAI
+
+logger = logging.getLogger(__name__)
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
-GEMINI_MODEL = "models/gemini-2.5-flash-lite"
-GEMINI_FALLBACK_MODEL = "models/gemini-2.0-flash-lite"
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
+GEMINI_FALLBACK_MODEL = "gemini-2.0-flash-lite"
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
@@ -84,55 +88,48 @@ def _ollama_available() -> bool:
         return False
 
 
-def _classify_ollama(prompt: str) -> str:
-    import urllib.request
-    body = json.dumps({
-        "model": OLLAMA_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "stream": False,
-        "format": "json",
-        "options": {"temperature": 0.1},
-    }).encode()
-    req = urllib.request.Request(
-        f"{OLLAMA_URL}/v1/chat/completions",
-        data=body,
-        headers={"Content-Type": "application/json"},
-        method="POST",
+def _chat_json(client: OpenAI, model: str, prompt: str) -> str:
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.1,
+        response_format={"type": "json_object"},
     )
-    with urllib.request.urlopen(req, timeout=60) as r:
-        data = json.loads(r.read())
-    return data["choices"][0]["message"]["content"]
+    return response.choices[0].message.content.strip()
 
 
 def classify(query: str) -> dict:
     """Classify a natural-language OER search query.
 
     Tries Gemini models first, falls back to local Ollama if all Gemini calls fail.
+    Both providers are accessed via their OpenAI-compatible endpoints.
     """
     examples = _load_few_shot_examples()
     prompt = _build_prompt(query, examples)
     raw = None
     last_error = None
 
-    # --- Gemini ---
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    # --- Gemini (OpenAI-compatible endpoint) ---
+    gemini = OpenAI(api_key=GEMINI_API_KEY, base_url=GEMINI_BASE_URL)
     for model in (GEMINI_MODEL, GEMINI_FALLBACK_MODEL):
         try:
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config={"temperature": 0.1, "response_mime_type": "application/json"},
-            )
-            raw = response.text.strip()
+            logger.info("classify: trying Gemini model=%s", model)
+            raw = _chat_json(gemini, model, prompt)
+            logger.info("classify: succeeded with Gemini model=%s", model)
             break
         except Exception as e:
+            logger.warning("classify: Gemini model=%s failed: %s", model, e)
             last_error = e
 
-    # --- Ollama fallback ---
+    # --- Ollama fallback (OpenAI-compatible endpoint) ---
     if raw is None:
         if _ollama_available():
-            raw = _classify_ollama(prompt)
+            logger.info("classify: falling back to Ollama model=%s at %s", OLLAMA_MODEL, OLLAMA_URL)
+            ollama = OpenAI(api_key="ollama", base_url=f"{OLLAMA_URL}/v1")
+            raw = _chat_json(ollama, OLLAMA_MODEL, prompt)
+            logger.info("classify: succeeded with Ollama model=%s", OLLAMA_MODEL)
         else:
+            logger.error("classify: Ollama unavailable at %s, no fallback possible", OLLAMA_URL)
             raise last_error
 
     raw = re.sub(r"^```(?:json)?\n?", "", raw)

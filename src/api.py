@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -7,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 load_dotenv(Path(__file__).parent.parent / ".env")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 from src.classifier import classify, needs_clarification
 from src.clarifier import apply_answer, get_next_question
