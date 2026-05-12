@@ -66,26 +66,60 @@ def search(query: dict, use_cache: bool = True) -> dict:
     return data
 
 
-def simple_search(text: str, size: int = 10, lang: str | None = None) -> dict:
-    """Convenience wrapper: full-text search across name, description, keywords."""
+def simple_search(
+    text: str,
+    size: int = 10,
+    lang: str | None = None,
+    negative_keywords: list[str] | None = None,
+    exclude_ids: list[str] | None = None,
+) -> dict:
+    """Convenience wrapper: full-text search across name, description, keywords.
+
+    `negative_keywords` are pushed into `must_not` so OERSI down-ranks/skips them.
+    `exclude_ids` filter out previously-rejected hits by id.
+    """
     must = [
         {
             "multi_match": {
                 "query": text,
                 "fields": ["name^3", "description", "keywords^2"],
-                "type": "best_fields", 
-                # Finds documents that match the query in any of the specified fields, but scores them based on the best matching field. 
-                # The ^3 and ^2 boost the importance of matches in 'name' and 'keywords' respectively.
+                "type": "best_fields",
             }
         }
     ]
     if lang:
         must.append({"term": {"inLanguage": lang}})
 
+    must_not: list[dict] = []
+    for kw in negative_keywords or []:
+        if not kw or not kw.strip():
+            continue
+        # Use match_phrase so "komplexe Zahlen" only excludes that exact phrase,
+        # NOT every document containing "Zahlen" or "komplexe" (which a multi_match
+        # would do via implicit OR across terms).
+        must_not.append({
+            "bool": {
+                "should": [
+                    {"match_phrase": {"name": kw}},
+                    {"match_phrase": {"description": kw}},
+                    {"match_phrase": {"keywords": kw}},
+                ],
+                "minimum_should_match": 1,
+            }
+        })
+    # Exclude previously-rejected IDs via a single terms filter on the keyword subfield.
+    clean_ids = [rid for rid in (exclude_ids or []) if rid]
+    if clean_ids:
+        must_not.append({"terms": {"id.keyword": clean_ids}})
+
+    bool_query: dict = {"must": must}
+    if must_not:
+        bool_query["must_not"] = must_not
+
     return search(
         {
             "size": size,
-            "query": {"bool": {"must": must}},
+            "query": {"bool": bool_query},
             "sort": [{"_score": "desc"}],
         }
     )
