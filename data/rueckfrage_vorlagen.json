@@ -1,0 +1,34 @@
+{
+  "description": "Rückfrage-Vorlagen für den OER-Navigator Clarifier. Eine Vorlage pro unklarer Achse. Immer nur eine Frage pro Turn (unklarste Achse zuerst).",
+  "vorlagen": {
+    "intention": {
+      "frage": "Was möchten Sie hauptsächlich tun — sich einen Überblick verschaffen, ein konkretes Problem lösen oder gezielt nach bestimmten Materialien suchen?",
+      "optionen": ["Überblick verschaffen", "Problem lösen", "Gezielt suchen", "Breite Recherche"]
+    },
+    "vorwissen": {
+      "frage": "Wie vertraut sind Sie bereits mit dem Thema?",
+      "optionen": ["Einsteiger (noch keine Vorkenntnisse)", "Fortgeschrittene (Grundkenntnisse vorhanden)", "Experte (tiefes Fachwissen)"]
+    },
+    "rolle": {
+      "frage": "Suchen Sie Materialien zum Selbstlernen oder zum Einsatz im Unterricht?",
+      "optionen": ["Zum Selbstlernen", "Für meinen Unterricht / meine Lehre", "Für Forschung"]
+    },
+    "thema": {
+      "frage": "Zu welchem Fach oder Themenbereich suchen Sie Materialien?",
+      "optionen": null
+    },
+    "format_preferred": {
+      "frage": "Bevorzugen Sie ein bestimmtes Format?",
+      "optionen": ["Video", "Skript / Text", "Übungsaufgaben", "Methode / Aktivität", "Kein Unterschied"]
+    },
+    "language": {
+      "frage": "In welcher Sprache sollen die Materialien sein?",
+      "optionen": ["Deutsch", "Englisch", "Beides / egal"]
+    },
+    "ergebnistypen": {
+      "frage": "Was soll die Suche liefern?",
+      "optionen": ["Nur Lernmaterialien", "Materialien + Veranstaltungen", "Materialien + Personen / Communities", "Alles"]
+    }
+  },
+  "achsen_prioritaet": ["thema", "intention", "vorwissen", "format_preferred", "rolle", "language", "ergebnistypen"]
+}
