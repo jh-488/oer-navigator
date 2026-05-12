@@ -113,9 +113,16 @@ button:disabled { background: var(--muted); cursor: not-allowed; }
   padding: 0.6rem 1rem;
   display: flex;
   align-items: center;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+  box-shadow: var(--shadow);
+}
+.profile-text {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  box-shadow: var(--shadow);
+  flex: 1;
 }
 .profile-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
 .provider-badge {
@@ -133,6 +140,35 @@ button:disabled { background: var(--muted); cursor: not-allowed; }
   padding: 0.2rem 0.6rem;
   font-size: 0.8rem;
   font-weight: 500;
+}
+
+/* Persona avatar */
+#persona-avatar {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border);
+  background: var(--card-bg);
+}
+#persona-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+#persona-avatar.persona-unknown {
+  background: var(--tag-bg);
+  color: var(--muted);
+}
+.persona-fallback {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 /* View label */

@@ -24,6 +24,7 @@ const clarificationSubmit = document.getElementById("clarification-submit");
 const profileSection = document.getElementById("profile-section");
 const profileTags = document.getElementById("profile-tags");
 const providerBadge = document.getElementById("provider-badge");
+const personaAvatar = document.getElementById("persona-avatar");
 const resultsSection = document.getElementById("results-section");
 const resultsContainer = document.getElementById("results-container");
 const viewLabel = document.getElementById("view-label");
@@ -214,11 +215,39 @@ function showClarification(question) {
   show(clarificationSection);
 }
 
+function detectPersona(clf) {
+  const rolle = clf.rolle;
+  const stufe = clf.bildungsstufe;
+  if (rolle === "Lernende" && ["Bachelor", "Master", "Promotion"].includes(stufe)) {
+    return { name: "Studierender", image: "images/Studierender.jpg" };
+  }
+  if (rolle === "Lehrende" && ["Sekundarstufe I", "Sekundarstufe II", "Berufsschule"].includes(stufe)) {
+    return { name: "Lehrerin", image: "images/Lehrerin.jpg" };
+  }
+  return null;
+}
+
+function updatePersonaAvatar(clf) {
+  const persona = detectPersona(clf);
+  if (persona) {
+    personaAvatar.className = "persona-known";
+    personaAvatar.title = persona.name;
+    personaAvatar.innerHTML = `<img src="${persona.image}" alt="${persona.name}" />`;
+  } else {
+    personaAvatar.className = "persona-unknown";
+    personaAvatar.title = "Persona unbekannt";
+    personaAvatar.innerHTML = `<span class="persona-fallback">?</span>`;
+  }
+}
+
 function updateProfile(clf, provider) {
   const tags = [];
   if (clf.intention) tags.push(clf.intention);
   if (clf.vorwissen) tags.push(clf.vorwissen);
   if (clf.rolle) tags.push(clf.rolle);
+  if (clf.bildungsstufe) tags.push(clf.bildungsstufe);
+  if (clf.einsatzkontext) tags.push(clf.einsatzkontext);
+  if (clf.suchmodus) tags.push(clf.suchmodus);
   if (clf.thema) tags.push(clf.thema);
   if (clf.format_preferred) tags.push(clf.format_preferred);
   if (clf.language) tags.push(clf.language === "de" ? "Deutsch" : clf.language === "en" ? "Englisch" : clf.language);
@@ -230,6 +259,7 @@ function updateProfile(clf, provider) {
     providerBadge.textContent = `KI: ${provider}`;
     providerBadge.classList.remove("hidden");
   }
+  updatePersonaAvatar(clf);
   show(profileSection);
 }
 
