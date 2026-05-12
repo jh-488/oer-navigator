@@ -268,11 +268,20 @@ button:disabled { background: var(--muted); cursor: not-allowed; }
 /* Graph / D3 canvas */
 #graph-canvas {
   width: 100%;
-  height: 480px;
+  height: 70vh;
+  min-height: 480px;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  cursor: grab;
+}
+#graph-canvas:active { cursor: grabbing; }
+#graph-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.4rem;
 }
 .node circle { fill: var(--primary); opacity: 0.85; }
 .node text { font-size: 11px; fill: var(--text); }

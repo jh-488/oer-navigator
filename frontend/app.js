@@ -344,54 +344,121 @@ function renderGraph(items) {
   resultsContainer.appendChild(canvas);
 
   const width = canvas.parentElement.clientWidth || 800;
-  const height = 480;
+  const height = Math.max(520, window.innerHeight * 0.7);
 
   const svg = d3.select("#graph-canvas")
     .attr("width", width)
     .attr("height", height);
 
-  const nodes = items.slice(0, 20).map((item, i) => ({
-    id: i,
-    name: truncate(item.name || "?", 30),
-    url: item.id || item["@id"] || "#",
-  }));
+  const zoomLayer = svg.append("g");
+  const gLink = zoomLayer.append("g");
+  const gNode = zoomLayer.append("g");
 
-  const centerNode = { id: -1, name: state.classification?.thema || "Thema", url: "#", isCenter: true };
-  const allNodes = [centerNode, ...nodes];
-  const links = nodes.map((n) => ({ source: -1, target: n.id }));
+  svg.call(d3.zoom()
+    .scaleExtent([0.3, 3])
+    .on("zoom", (e) => zoomLayer.attr("transform", e.transform)));
+
+  const hint = document.createElement("p");
+  hint.id = "graph-hint";
+  hint.textContent = "Scroll zum Zoomen · Ziehen zum Verschieben · Knoten klicken zum Erweitern";
+  canvas.insertAdjacentElement("afterend", hint);
+
+  let nextId = 0;
+  const centerNode = { id: nextId++, name: truncate(state.classification?.thema || "Thema", 30), url: "#", isCenter: true };
+  const allNodes = [centerNode];
+  const allLinks = [];
+
+  items.slice(0, 12).forEach((item) => {
+    const n = { id: nextId++, name: truncate(item.name || "?", 28), url: item.id || item["@id"] || "#", item };
+    allNodes.push(n);
+    allLinks.push({ source: centerNode.id, target: n.id });
+  });
 
   const sim = d3.forceSimulation(allNodes)
-    .force("link", d3.forceLink(links).id((d) => d.id).distance(120))
-    .force("charge", d3.forceManyBody().strength(-200))
-    .force("center", d3.forceCenter(width / 2, height / 2));
+    .force("link", d3.forceLink(allLinks).id((d) => d.id).distance(130))
+    .force("charge", d3.forceManyBody().strength(-220))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collision", d3.forceCollide(40));
 
-  const link = svg.append("g").selectAll("line")
-    .data(links).join("line").attr("class", "link");
+  function update() {
+    const link = gLink.selectAll("line").data(allLinks, (d) => `${d.source.id ?? d.source}-${d.target.id ?? d.target}`);
+    link.enter().append("line").attr("class", "link");
+    link.exit().remove();
 
-  const node = svg.append("g").selectAll("g")
-    .data(allNodes).join("g").attr("class", "node")
-    .call(d3.drag()
-      .on("start", (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-      .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
-      .on("end", (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+    const node = gNode.selectAll("g.node").data(allNodes, (d) => d.id);
 
-  node.append("circle")
-    .attr("r", (d) => d.isCenter ? 16 : 8)
-    .style("fill", (d) => d.isCenter ? "#1d4ed8" : "var(--primary)")
-    .style("cursor", (d) => d.url !== "#" ? "pointer" : "default")
-    .on("click", (e, d) => { if (d.url && d.url !== "#") window.open(d.url, "_blank"); });
+    const nodeEnter = node.enter().append("g").attr("class", "node")
+      .call(d3.drag()
+        .on("start", (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+        .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
+        .on("end", (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
 
-  node.append("text")
-    .attr("dy", (d) => d.isCenter ? 30 : 20)
-    .attr("text-anchor", "middle")
-    .text((d) => d.name);
+    nodeEnter.append("circle")
+      .attr("r", (d) => d.isCenter ? 18 : 10)
+      .style("fill", (d) => d.isCenter ? "#1d4ed8" : d.expanded ? "#6366f1" : "var(--primary)")
+      .style("cursor", (d) => d.isCenter ? "default" : "pointer")
+      .on("click", async (e, d) => {
+        e.stopPropagation();
+        if (d.isCenter || d.expanded) return;
+        d.expanded = true;
+        d3.select(e.currentTarget).style("fill", "#6366f1");
+
+        try {
+          const res = await post("/search", {
+            classification: { ...state.classification, thema: d.name },
+            size: 6,
+            negative_keywords: state.negativeKeywords,
+            exclude_ids: allNodes.filter(n => n.url && n.url !== "#").map(n => n.url),
+          });
+          (res.results || []).slice(0, 6).forEach((item) => {
+            const child = { id: nextId++, name: truncate(item.name || "?", 28), url: item.id || item["@id"] || "#", item, x: d.x, y: d.y };
+            allNodes.push(child);
+            allLinks.push({ source: d.id, target: child.id });
+          });
+          sim.nodes(allNodes);
+          sim.force("link").links(allLinks);
+          sim.alpha(0.4).restart();
+          update();
+        } catch (_) {}
+      });
+
+    nodeEnter.append("text")
+      .attr("dy", (d) => d.isCenter ? 32 : 22)
+      .attr("text-anchor", "middle")
+      .style("font-size", (d) => d.isCenter ? "0.8rem" : "0.7rem")
+      .text((d) => d.name);
+
+    // External link icon — always opens the URL, independent of expand
+    nodeEnter.filter((d) => !d.isCenter && d.url && d.url !== "#")
+      .append("text")
+      .attr("dy", -12)
+      .attr("dx", 10)
+      .attr("text-anchor", "middle")
+      .style("font-size", "0.65rem")
+      .style("cursor", "pointer")
+      .style("fill", "var(--muted)")
+      .text("↗")
+      .on("click", (e, d) => {
+        e.stopPropagation();
+        window.open(d.url, "_blank");
+      });
+
+    node.exit().remove();
+
+    sim.nodes(allNodes);
+    sim.force("link").links(allLinks);
+    sim.alpha(0.3).restart();
+  }
 
   sim.on("tick", () => {
-    link
+    gLink.selectAll("line")
       .attr("x1", (d) => d.source.x).attr("y1", (d) => d.source.y)
       .attr("x2", (d) => d.target.x).attr("y2", (d) => d.target.y);
-    node.attr("transform", (d) => `translate(${d.x},${d.y})`);
+    gNode.selectAll("g.node")
+      .attr("transform", (d) => `translate(${d.x},${d.y})`);
   });
+
+  update();
 }
 
 function makeCard(item, cardStyle) {
