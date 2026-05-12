@@ -2,15 +2,15 @@ import json
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from classifier import classify, needs_clarification
-from clarifier import apply_answer, get_next_question
-from oersi_client import simple_search
+from src.classifier import classify, needs_clarification
+from src.clarifier import apply_answer, get_next_question
+from src.oersi_client import simple_search
 
 TWILLO_PATH = Path(__file__).parent.parent / "data" / "twillo_corpus.json"
 TAXONOMY_PATH = Path(__file__).parent.parent / "data" / "situations_taxonomy.json"
@@ -42,7 +42,10 @@ class SearchRequest(BaseModel):
 
 @app.post("/classify")
 def classify_query(req: QueryRequest):
-    result = classify(req.query)
+    try:
+        result = classify(req.query)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"LLM nicht erreichbar: {e}")
     question = get_next_question(result) if needs_clarification(result) else None
     return {"classification": result, "clarification_needed": question is not None, "question": question}
 

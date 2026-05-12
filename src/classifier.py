@@ -2,7 +2,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Optional
+
 
 from dotenv import load_dotenv
 from google import genai
@@ -10,6 +10,7 @@ from google import genai
 load_dotenv(Path(__file__).parent.parent / ".env")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
 GEMINI_MODEL = "models/gemini-2.5-flash-lite"
+GEMINI_FALLBACK_MODEL = "models/gemini-2.0-flash-lite"
 
 EVAL_CORPUS_PATH = Path(__file__).parent.parent / "data" / "eval_corpus.json"
 
@@ -79,11 +80,20 @@ def classify(query: str) -> dict:
     examples = _load_few_shot_examples()
     prompt = _build_prompt(query, examples)
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-        config={"temperature": 0.1, "response_mime_type": "application/json"},
-    )
+    for model in (GEMINI_MODEL, GEMINI_FALLBACK_MODEL):
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config={"temperature": 0.1, "response_mime_type": "application/json"},
+            )
+            break
+        except Exception as e:
+            if model == GEMINI_FALLBACK_MODEL:
+                raise
+            last_error = e
+    else:
+        raise last_error
 
     raw = response.text.strip()
     raw = re.sub(r"^```(?:json)?\n?", "", raw)
