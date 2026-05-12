@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /home/jihad-h/LiaScript/oer-navigator/.venv
+set -gx VIRTUAL_ENV /home/sz/Desktop/Python/oer-navigator/.venv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH
