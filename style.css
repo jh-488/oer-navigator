@@ -152,6 +152,40 @@ button:disabled { background: var(--muted); cursor: not-allowed; }
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  position: relative;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.result-card.removing {
+  opacity: 0.3;
+  transform: scale(0.97);
+  pointer-events: none;
+}
+.card-remove {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.5rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  line-height: 1;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.card-remove:hover {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
 }
 .result-card h3 { font-size: 1rem; font-weight: 600; }
 .result-card h3 a { color: var(--primary); text-decoration: none; }
