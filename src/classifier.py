@@ -1,8 +1,8 @@
 import json
 import os
 import re
+import urllib.request
 from pathlib import Path
-
 
 from dotenv import load_dotenv
 from google import genai
@@ -11,6 +11,9 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
 GEMINI_MODEL = "models/gemini-2.5-flash-lite"
 GEMINI_FALLBACK_MODEL = "models/gemini-2.0-flash-lite"
+
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
 EVAL_CORPUS_PATH = Path(__file__).parent.parent / "data" / "eval_corpus.json"
 
@@ -73,13 +76,46 @@ Anfrage: "{query}"
 Ausgabe:"""
 
 
-def classify(query: str) -> dict:
-    """Classify a natural-language OER search query into a structured situation profile."""
-    client = genai.Client(api_key=GEMINI_API_KEY)
+def _ollama_available() -> bool:
+    try:
+        with urllib.request.urlopen(f"{OLLAMA_URL}/api/tags", timeout=2) as r:
+            return r.status == 200
+    except Exception:
+        return False
 
+
+def _classify_ollama(prompt: str) -> str:
+    import urllib.request
+    body = json.dumps({
+        "model": OLLAMA_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+        "format": "json",
+        "options": {"temperature": 0.1},
+    }).encode()
+    req = urllib.request.Request(
+        f"{OLLAMA_URL}/v1/chat/completions",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=60) as r:
+        data = json.loads(r.read())
+    return data["choices"][0]["message"]["content"]
+
+
+def classify(query: str) -> dict:
+    """Classify a natural-language OER search query.
+
+    Tries Gemini models first, falls back to local Ollama if all Gemini calls fail.
+    """
     examples = _load_few_shot_examples()
     prompt = _build_prompt(query, examples)
+    raw = None
+    last_error = None
 
+    # --- Gemini ---
+    client = genai.Client(api_key=GEMINI_API_KEY)
     for model in (GEMINI_MODEL, GEMINI_FALLBACK_MODEL):
         try:
             response = client.models.generate_content(
@@ -87,15 +123,18 @@ def classify(query: str) -> dict:
                 contents=prompt,
                 config={"temperature": 0.1, "response_mime_type": "application/json"},
             )
+            raw = response.text.strip()
             break
         except Exception as e:
-            if model == GEMINI_FALLBACK_MODEL:
-                raise
             last_error = e
-    else:
-        raise last_error
 
-    raw = response.text.strip()
+    # --- Ollama fallback ---
+    if raw is None:
+        if _ollama_available():
+            raw = _classify_ollama(prompt)
+        else:
+            raise last_error
+
     raw = re.sub(r"^```(?:json)?\n?", "", raw)
     raw = re.sub(r"\n?```$", "", raw)
 
