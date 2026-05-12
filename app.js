@@ -1,35 +1,5 @@
 const API = "http://localhost:8000";
 
-// Watch the results container for being cleared/hidden by any code path
-window.addEventListener("DOMContentLoaded", () => {
-  const target = document.getElementById("results-container");
-  const section = document.getElementById("results-section");
-  if (target) {
-    new MutationObserver((muts) => {
-      muts.forEach((m) => {
-        if (m.type === "childList") {
-          const added = Array.from(m.addedNodes).map((n) => n.nodeName + (n.id ? "#" + n.id : "") + (n.className ? "." + String(n.className).split(" ").join(".") : "") + (n.textContent ? ` text="${n.textContent.slice(0, 60)}"` : ""));
-          const removed = Array.from(m.removedNodes).map((n) => n.nodeName + (n.className ? "." + String(n.className).split(" ").join(".") : ""));
-          console.log("[mutation] results-container childList: +", m.addedNodes.length, "-", m.removedNodes.length, "now:", target.children.length, "added:", added, "removed:", removed);
-          if (m.removedNodes.length > 0) console.trace("[mutation] removal stack");
-          if (m.addedNodes.length > 0) console.trace("[mutation] addition stack");
-        }
-      });
-    }).observe(target, { childList: true });
-  }
-  if (section) {
-    new MutationObserver((muts) => {
-      muts.forEach((m) => {
-        if (m.attributeName === "class") {
-          const hidden = section.classList.contains("hidden");
-          console.log("[mutation] results-section class changed, hidden=", hidden);
-          if (hidden) console.trace("[mutation] hide stack");
-        }
-      });
-    }).observe(section, { attributes: true, attributeFilter: ["class"] });
-  }
-});
-
 let state = {
   classification: null,
   currentAxis: null,
@@ -39,6 +9,7 @@ let state = {
   negativeKeywords: [],
   excludeIds: [],
   refining: false,
+  searching: false,
 };
 
 // --- DOM refs ---
@@ -60,24 +31,20 @@ const errorBanner = document.getElementById("error-banner");
 
 // --- Event listeners ---
 searchForm.addEventListener("submit", async (e) => {
-  console.log("[evt] form submit", { isTrusted: e.isTrusted, cancelable: e.cancelable, submitter: e.submitter });
   e.preventDefault();
   const query = queryInput.value.trim();
-  if (!query || searchBtn.disabled) return;
+  if (!query || searchBtn.disabled || state.searching) return;
   await runClassify(query);
 });
 
-// Enter in textarea submits, Shift+Enter adds newline
 queryInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
-    console.log("[evt] textarea Enter -> requestSubmit");
     e.preventDefault();
-    searchForm.requestSubmit();
+    if (!searchBtn.disabled) searchForm.requestSubmit();
   }
 });
 
-clarificationSubmit.addEventListener("click", async (e) => {
-  console.log("[evt] clarificationSubmit click", { isTrusted: e.isTrusted });
+clarificationSubmit.addEventListener("click", async () => {
   const answer = state.selectedOption || clarificationFree.value.trim();
   if (!answer) return;
   await runClarify(state.currentAxis, answer);
@@ -85,24 +52,15 @@ clarificationSubmit.addEventListener("click", async (e) => {
 
 clarificationFree.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
-    console.log("[evt] clarificationFree Enter");
     e.preventDefault();
     clarificationSubmit.click();
   }
 });
 
-window.addEventListener("beforeunload", (e) => {
-  console.warn("[evt] BEFOREUNLOAD — page is about to reload/navigate!");
-});
-
-window.addEventListener("pagehide", () => {
-  console.warn("[evt] PAGEHIDE");
-});
-
 // --- API calls ---
 async function runClassify(query) {
-  console.log("[runClassify] START — clearing results", { query });
-  console.trace("[runClassify] call stack");
+  if (state.searching) return;
+  state.searching = true;
   setLoading(true);
   hideError();
   hide(clarificationSection);
@@ -115,29 +73,24 @@ async function runClassify(query) {
 
   try {
     const res = await post("/classify", { query });
-    console.log("[runClassify] response", res);
     state.classification = res.classification;
     updateProfile(res.classification);
 
     if (res.clarification_needed) {
-      console.log("[runClassify] -> showClarification");
+      state.searching = false;
       showClarification(res.question);
     } else {
-      console.log("[runClassify] -> runSearch");
       await runSearch();
     }
   } catch (err) {
-    console.error("[runClassify] error", err);
     showError(err.message);
   } finally {
     setLoading(false);
-    console.log("[runClassify] END");
+    state.searching = false;
   }
 }
 
 async function runClarify(axis, answer) {
-  console.log("[runClarify] START", { axis, answer });
-  console.trace("[runClarify] call stack");
   setLoading(true);
   hideError();
   hide(clarificationSection);
@@ -148,28 +101,22 @@ async function runClarify(axis, answer) {
       axis,
       answer,
     });
-    console.log("[runClarify] response", res);
     state.classification = res.classification;
     updateProfile(res.classification);
 
     if (res.clarification_needed) {
-      console.log("[runClarify] -> showClarification");
       showClarification(res.question);
     } else {
-      console.log("[runClarify] -> runSearch");
       await runSearch();
     }
   } catch (err) {
-    console.error("[runClarify] error", err);
     showError(err.message);
   } finally {
     setLoading(false);
-    console.log("[runClarify] END");
   }
 }
 
 async function runSearch() {
-  console.log("[runSearch] START", { classification: state.classification });
   setLoading(true);
   try {
     const res = await post("/search", {
@@ -178,36 +125,21 @@ async function runSearch() {
       negative_keywords: state.negativeKeywords,
       exclude_ids: state.excludeIds,
     });
-    console.log("[runSearch] response", { total: res.total, viz: res.visualization?.id, results: res.results });
     state.lastResults = res.results || [];
     state.lastVisualization = res.visualization;
     renderResults(res);
     show(resultsSection);
-    console.log("[runSearch] results section shown, container children:", resultsContainer.children.length);
     resultsSection.scrollIntoView({ behavior: "smooth" });
-    setTimeout(() => {
-      console.log("[runSearch] +500ms check — results visible?", !resultsSection.classList.contains("hidden"), "children:", resultsContainer.children.length);
-    }, 500);
-    setTimeout(() => {
-      console.log("[runSearch] +2000ms check — results visible?", !resultsSection.classList.contains("hidden"), "children:", resultsContainer.children.length);
-    }, 2000);
   } catch (err) {
-    console.error("[runSearch] error", err);
     showError(err.message);
   } finally {
     setLoading(false);
-    console.log("[runSearch] END");
   }
 }
 
 async function runRefine(rejected, cardEl) {
-  if (state.refining) {
-    console.warn("[runRefine] IGNORED — already refining", { rejected: rejected?.name });
-    return;
-  }
+  if (state.refining) return;
   state.refining = true;
-  console.log("[runRefine] START", { rejected: rejected?.name, t: performance.now().toFixed(1) });
-  console.trace("[runRefine] caller");
   if (cardEl) cardEl.classList.add("removing");
   setLoading(true);
   hideError();
@@ -220,17 +152,6 @@ async function runRefine(rejected, cardEl) {
       prior_negative_keywords: state.negativeKeywords,
       prior_exclude_ids: state.excludeIds,
     });
-    console.log("[runRefine] response", {
-      total: res.total,
-      results_len: (res.results || []).length,
-      first_name: (res.results || [])[0]?.name,
-      viz_id: res.visualization?.id,
-      similar_ids: res.similar_ids,
-      negative_keywords: res.negative_keywords,
-      exclude_ids: res.exclude_ids,
-      thema_refined: res.thema_refined,
-      classification_thema: res.classification?.thema,
-    });
 
     if (res.classification) {
       state.classification = res.classification;
@@ -241,21 +162,16 @@ async function runRefine(rejected, cardEl) {
     state.lastResults = res.results || [];
     state.lastVisualization = res.visualization;
 
-    // Defer the re-render past the current event cycle so the lingering
-    // pointer/click events from the X button can't land on the freshly-rendered
-    // card at the same screen coordinates.
     await new Promise((resolve) => setTimeout(resolve, 0));
     renderResults(res);
     show(resultsSection);
     resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (err) {
-    console.error("[runRefine] error", err);
     if (cardEl) cardEl.classList.remove("removing");
     showError(err.message);
   } finally {
     setLoading(false);
     state.refining = false;
-    console.log("[runRefine] END");
   }
 }
 
@@ -315,13 +231,9 @@ function updateProfile(clf) {
 function renderResults(res) {
   const viz = res.visualization;
   const items = res.results || [];
-  console.log("[renderResults] START", { viz_id: viz?.id, items_len: items.length, first: items[0]?.name });
-  console.trace("[renderResults] caller");
   viewLabel.textContent = `Ansicht: ${viz.name}`;
   resultsContainer.className = "";
   resultsContainer.innerHTML = "";
-
-  const intention = state.classification?.intention || "orientieren";
 
   if (viz.id === "V3") {
     renderCards(items);
@@ -332,7 +244,6 @@ function renderResults(res) {
   } else {
     renderList(items);
   }
-  console.log("[renderResults] END", { container_children: resultsContainer.children.length });
 }
 
 function renderList(items) {
@@ -471,12 +382,6 @@ function makeCard(item, cardStyle) {
     </div>
   `;
   card.querySelector(".card-remove").addEventListener("click", (e) => {
-    console.log("[card-remove click]", {
-      isTrusted: e.isTrusted,
-      item: item?.name,
-      t: performance.now().toFixed(1),
-      refining: state.refining,
-    });
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
