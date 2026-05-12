@@ -3,18 +3,24 @@
   "version": "1.0",
   "source": "HackathOERn 2026, Tag 1 — Taxonomie-Workshop + Persona-Entwicklung",
   "achsen": {
-    "intention": ["orientieren", "problemlösung", "eigenschaftssuche", "recherche", "problemorientiert"],
+    "intention": ["Überblick erarbeiten", "Problem lösen", "Gezielt suchen", "Vertieft recherchieren"],
     "vorwissen": ["Einsteiger", "Fortgeschrittene", "Experte"],
     "rolle": ["Lernende", "Lehrende", "Forschende"],
+    "bildungsstufe": ["Grundschule", "Sekundarstufe I", "Sekundarstufe II", "Berufsschule", "Bachelor", "Master", "Promotion", "Weiterbildung"],
+    "einsatzkontext": ["Selbststudium", "Unterrichtsvorbereitung", "Unterrichtsdurchführung", "Prüfungsvorbereitung", "Forschungsprojekt", "Vortrag/Präsentation", "Beratungsgespräch"],
+    "suchmodus": ["Explorativ", "Fokussiert", "Vergleichend"],
     "ergebnistypen": ["Materialien", "Events", "Personen"]
   },
   "situationen": [
     {
       "id": "S1",
       "name": "Einstieg & Orientierung",
-      "intention": "orientieren",
+      "intention": "Überblick erarbeiten",
       "vorwissen": "Einsteiger",
       "rolle": "Lernende",
+      "bildungsstufe": "Bachelor",
+      "einsatzkontext": "Selbststudium",
+      "suchmodus": "Explorativ",
       "beschreibung": "Nutzer:in hat kein klares Ziel, sucht Überblick über ein Thema und einen Einstiegspfad.",
       "typische_anfrage": "Grundstudium Mathematik Vorkurs Beweise — wo fange ich an?",
       "persona_beispiel": "Jonas Richter",
@@ -28,9 +34,12 @@
     {
       "id": "S2",
       "name": "Akute Problemlösung",
-      "intention": "problemlösung",
+      "intention": "Problem lösen",
       "vorwissen": "Fortgeschrittene",
       "rolle": "Lehrende",
+      "bildungsstufe": "Sekundarstufe II",
+      "einsatzkontext": "Unterrichtsdurchführung",
+      "suchmodus": "Fokussiert",
       "beschreibung": "Nutzer:in steht vor einem konkreten pädagogischen oder fachlichen Problem und braucht sofort einsetzbare Ressourcen.",
       "typische_anfrage": "In meiner 9b hat jemand gesagt, Hitler habe auch was Gutes gemacht. Wie reagiere ich nächste Woche?",
       "persona_beispiel": "Anna Berger",
@@ -44,9 +53,12 @@
     {
       "id": "S3",
       "name": "Gezielte Eigenschaftssuche",
-      "intention": "eigenschaftssuche",
+      "intention": "Gezielt suchen",
       "vorwissen": "Fortgeschrittene",
       "rolle": "Lehrende",
+      "bildungsstufe": "Sekundarstufe II",
+      "einsatzkontext": "Unterrichtsvorbereitung",
+      "suchmodus": "Fokussiert",
       "beschreibung": "Nutzer:in kennt exakte Anforderungen (Lizenz, Format, Sprache, Niveau) und sucht Treffer, die alle Kriterien erfüllen.",
       "typische_anfrage": "CC-BY Videos zu Machine Learning auf Deutsch",
       "persona_beispiel": "Anna Berger",
@@ -60,9 +72,12 @@
     {
       "id": "S4",
       "name": "Breite Recherche",
-      "intention": "recherche",
+      "intention": "Vertieft recherchieren",
       "vorwissen": "Fortgeschrittene",
       "rolle": "Lernende",
+      "bildungsstufe": "Bachelor",
+      "einsatzkontext": "Selbststudium",
+      "suchmodus": "Vergleichend",
       "beschreibung": "Nutzer:in will das gesamte Materialangebot zu einem Thema explorieren, inkl. Synonyme, Varianten und verwandte Begriffe.",
       "typische_anfrage": "Alles zu Künstlicher Intelligenz — auch AI und maschinelles Lernen",
       "persona_beispiel": "Jonas Richter",
@@ -76,9 +91,12 @@
     {
       "id": "S5",
       "name": "Problemorientierte Suche",
-      "intention": "problemorientiert",
+      "intention": "Problem lösen",
       "vorwissen": "Fortgeschrittene",
       "rolle": "Lehrende",
+      "bildungsstufe": "Bachelor",
+      "einsatzkontext": "Unterrichtsdurchführung",
+      "suchmodus": "Explorativ",
       "beschreibung": "Nutzer:in beschreibt ein pädagogisches Problem ohne klares Suchwort — das System muss Thema und Format erst erschließen.",
       "typische_anfrage": "Meine Studierenden sind so inaktiv im Seminar — wie kann ich sie aktivieren?",
       "persona_beispiel": "Anna Berger",
@@ -95,35 +113,35 @@
       "id": "V1",
       "name": "Themenlandkarte",
       "beschreibung": "Räumliche Darstellung von Themenclustern (D3.js force/bubble layout). Gibt Überblick ohne vordefinierten Pfad.",
-      "geeignet_fuer": ["orientieren"],
+      "geeignet_fuer": ["Überblick erarbeiten"],
       "nicht_geeignet": "Wenn Nutzer:in bereits weiß, was sie sucht — dann zu wenig Filterung."
     },
     {
       "id": "V2",
       "name": "Lernpfad-DAG",
       "beschreibung": "Gerichteter azyklischer Graph (D3.js) der Lernschritte — zeigt empfohlene Reihenfolge.",
-      "geeignet_fuer": ["orientieren", "recherche"],
+      "geeignet_fuer": ["Überblick erarbeiten", "Vertieft recherchieren"],
       "nicht_geeignet": "Setzt Vorwissen über sinnvolle Reihenfolge voraus — ungeeignet für Einsteiger ohne Vorstruktur."
     },
     {
       "id": "V3",
       "name": "Cards mit Community-Sidebar",
       "beschreibung": "Raster-Cards für Materialien + rechte Sidebar mit Events und Personen/Communities.",
-      "geeignet_fuer": ["problemlösung", "problemorientiert"],
+      "geeignet_fuer": ["Problem lösen"],
       "nicht_geeignet": "Wenn nur Materialien gesucht werden — Community-Sidebar wäre leer und ablenkend."
     },
     {
       "id": "V4",
       "name": "Facettierte Trefferliste",
       "beschreibung": "Klassische Suchliste mit Filterleiste (Lizenz, Format, Sprache, Niveau) links.",
-      "geeignet_fuer": ["eigenschaftssuche"],
+      "geeignet_fuer": ["Gezielt suchen"],
       "nicht_geeignet": "Wenn Nutzer:in die Parameter nicht kennt — Filterleiste ist dann überwältigend."
     },
     {
       "id": "V5",
       "name": "Graph-Explorer",
       "beschreibung": "Interaktiver Graph mit Begriffsknoten und Kanten (D3.js force simulation). Unterstützt Synonym-Navigation.",
-      "geeignet_fuer": ["recherche"],
+      "geeignet_fuer": ["Vertieft recherchieren"],
       "nicht_geeignet": "Bei akutem Bedarf — Graph braucht Zeit zur Exploration."
     },
     {
@@ -135,10 +153,9 @@
     }
   ],
   "zuordnungsmatrix": {
-    "orientieren":       { "primary": "V1", "fallback": "V2", "last_resort": "V6" },
-    "problemlösung":     { "primary": "V3", "fallback": "V6", "last_resort": "V6" },
-    "eigenschaftssuche": { "primary": "V4", "fallback": "V6", "last_resort": "V6" },
-    "recherche":         { "primary": "V5", "fallback": "V2", "last_resort": "V6" },
-    "problemorientiert": { "primary": "V3", "fallback": "V6", "last_resort": "V6" }
+    "Überblick erarbeiten":  { "primary": "V1", "fallback": "V2", "last_resort": "V6" },
+    "Problem lösen":         { "primary": "V3", "fallback": "V6", "last_resort": "V6" },
+    "Gezielt suchen":        { "primary": "V4", "fallback": "V6", "last_resort": "V6" },
+    "Vertieft recherchieren":{ "primary": "V5", "fallback": "V2", "last_resort": "V6" }
   }
 }

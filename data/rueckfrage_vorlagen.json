@@ -2,8 +2,8 @@
   "description": "Rückfrage-Vorlagen für den OER-Navigator Clarifier. Eine Vorlage pro unklarer Achse. Immer nur eine Frage pro Turn (unklarste Achse zuerst).",
   "vorlagen": {
     "intention": {
-      "frage": "Was möchten Sie hauptsächlich tun — sich einen Überblick verschaffen, ein konkretes Problem lösen oder gezielt nach bestimmten Materialien suchen?",
-      "optionen": ["Überblick verschaffen", "Problem lösen", "Gezielt suchen", "Breite Recherche"]
+      "frage": "Was möchten Sie hauptsächlich tun?",
+      "optionen": ["Überblick erarbeiten", "Problem lösen", "Gezielt suchen", "Vertieft recherchieren"]
     },
     "vorwissen": {
       "frage": "Wie vertraut sind Sie bereits mit dem Thema?",
@@ -12,6 +12,18 @@
     "rolle": {
       "frage": "Suchen Sie Materialien zum Selbstlernen oder zum Einsatz im Unterricht?",
       "optionen": ["Zum Selbstlernen", "Für meinen Unterricht / meine Lehre", "Für Forschung"]
+    },
+    "bildungsstufe": {
+      "frage": "In welchem Bildungskontext werden die Materialien eingesetzt?",
+      "optionen": ["Grundschule", "Sekundarstufe I", "Sekundarstufe II", "Berufsschule", "Bachelor", "Master", "Promotion", "Weiterbildung"]
+    },
+    "einsatzkontext": {
+      "frage": "Wofür werden die Materialien konkret gebraucht?",
+      "optionen": ["Selbststudium", "Unterrichtsvorbereitung", "Unterrichtsdurchführung", "Prüfungsvorbereitung", "Forschungsprojekt", "Vortrag/Präsentation", "Beratungsgespräch"]
+    },
+    "suchmodus": {
+      "frage": "Wie gehen Sie die Suche an?",
+      "optionen": ["Explorativ (offen, breit umschauen)", "Fokussiert (gezielt, klare Vorstellung)", "Vergleichend (mehrere Optionen abwägen)"]
     },
     "thema": {
       "frage": "Zu welchem Fach oder Themenbereich suchen Sie Materialien?",
@@ -30,5 +42,5 @@
       "optionen": ["Nur Lernmaterialien", "Materialien + Veranstaltungen", "Materialien + Personen / Communities", "Alles"]
     }
   },
-  "achsen_prioritaet": ["thema", "intention", "vorwissen", "format_preferred", "rolle", "language", "ergebnistypen"]
+  "achsen_prioritaet": ["thema", "intention", "bildungsstufe", "einsatzkontext", "suchmodus", "vorwissen", "format_preferred", "rolle", "language", "ergebnistypen"]
 }
