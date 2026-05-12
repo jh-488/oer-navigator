@@ -23,6 +23,7 @@ const clarificationFree = document.getElementById("clarification-free");
 const clarificationSubmit = document.getElementById("clarification-submit");
 const profileSection = document.getElementById("profile-section");
 const profileTags = document.getElementById("profile-tags");
+const providerBadge = document.getElementById("provider-badge");
 const resultsSection = document.getElementById("results-section");
 const resultsContainer = document.getElementById("results-container");
 const viewLabel = document.getElementById("view-label");
@@ -74,7 +75,7 @@ async function runClassify(query) {
   try {
     const res = await post("/classify", { query });
     state.classification = res.classification;
-    updateProfile(res.classification);
+    updateProfile(res.classification, res.provider);
 
     if (res.clarification_needed) {
       state.searching = false;
@@ -213,7 +214,7 @@ function showClarification(question) {
   show(clarificationSection);
 }
 
-function updateProfile(clf) {
+function updateProfile(clf, provider) {
   const tags = [];
   if (clf.intention) tags.push(clf.intention);
   if (clf.vorwissen) tags.push(clf.vorwissen);
@@ -225,6 +226,10 @@ function updateProfile(clf) {
   profileTags.innerHTML = tags
     .map((t) => `<span class="profile-tag">${t}</span>`)
     .join("");
+  if (provider) {
+    providerBadge.textContent = `KI: ${provider}`;
+    providerBadge.classList.remove("hidden");
+  }
   show(profileSection);
 }
 
