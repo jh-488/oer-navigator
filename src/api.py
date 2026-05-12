@@ -97,7 +97,7 @@ def search(req: SearchRequest):
             excl = set(req.exclude_ids)
             hits = [h for h in hits if (h.get("id") or h.get("@id")) not in excl]
 
-    visualization = _get_visualization(clf.get("intention", "orientieren"))
+    visualization = _get_visualization(clf.get("intention", "Überblick erarbeiten"))
 
     return {
         "results": hits,
@@ -151,7 +151,7 @@ def refine(req: RefineRequest):
         excl = set(exclude_ids)
         hits = [h for h in hits if (h.get("id") or h.get("@id")) not in excl]
 
-    visualization = _get_visualization(clf.get("intention", "orientieren"))
+    visualization = _get_visualization(clf.get("intention", "Überblick erarbeiten"))
 
     return {
         "results": hits,

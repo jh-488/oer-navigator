@@ -28,10 +28,20 @@ EVAL_CORPUS_PATH = Path(__file__).parent.parent / "data" / "eval_corpus.json"
 
 CONFIDENCE_THRESHOLD = 0.7
 
-VALID_INTENTIONS = ["orientieren", "problemlösung", "eigenschaftssuche", "recherche", "problemorientiert"]
+VALID_INTENTIONS = ["Überblick erarbeiten", "Problem lösen", "Gezielt suchen", "Vertieft recherchieren"]
 VALID_VORWISSEN = ["Einsteiger", "Fortgeschrittene", "Experte"]
 VALID_ROLLEN = ["Lernende", "Lehrende", "Forschende"]
 VALID_ERGEBNISTYPEN = ["Materialien", "Events", "Personen"]
+VALID_BILDUNGSSTUFEN = [
+    "Grundschule", "Sekundarstufe I", "Sekundarstufe II", "Berufsschule",
+    "Bachelor", "Master", "Promotion", "Weiterbildung",
+]
+VALID_EINSATZKONTEXTE = [
+    "Selbststudium", "Unterrichtsvorbereitung", "Unterrichtsdurchführung",
+    "Prüfungsvorbereitung", "Forschungsprojekt", "Vortrag/Präsentation",
+    "Beratungsgespräch",
+]
+VALID_SUCHMODI = ["Explorativ", "Fokussiert", "Vergleichend"]
 
 
 def _load_few_shot_examples() -> list[dict]:
@@ -51,6 +61,9 @@ Ausgabe:
   "intention": "{e['intention']}",
   "vorwissen": "{e['vorwissen']}",
   "rolle": "{e['rolle']}",
+  "bildungsstufe": {json.dumps(e.get('bildungsstufe'), ensure_ascii=False)},
+  "einsatzkontext": {json.dumps(e.get('einsatzkontext'), ensure_ascii=False)},
+  "suchmodus": {json.dumps(e.get('suchmodus'), ensure_ascii=False)},
   "thema": {json.dumps(e['thema'], ensure_ascii=False)},
   "format_preferred": {json.dumps(e['format_preferred'], ensure_ascii=False)},
   "language": {json.dumps(e['language'], ensure_ascii=False)},
@@ -58,6 +71,9 @@ Ausgabe:
   "confidence": {{
     "intention": 0.92,
     "vorwissen": 0.80,
+    "bildungsstufe": 0.85,
+    "einsatzkontext": 0.80,
+    "suchmodus": 0.82,
     "thema": 0.88,
     "format_preferred": 0.75
   }}
@@ -67,9 +83,12 @@ Ausgabe:
     return f"""Du bist ein Klassifikator für OER-Suchanfragen. Analysiere die natürlichsprachliche Suchanfrage und gib ein strukturiertes JSON-Objekt zurück.
 
 Mögliche Werte:
-- intention: {VALID_INTENTIONS}
+- intention (kognitives Ziel): {VALID_INTENTIONS}
 - vorwissen: {VALID_VORWISSEN}
 - rolle: {VALID_ROLLEN}
+- bildungsstufe (institutioneller Kontext): {VALID_BILDUNGSSTUFEN} oder null
+- einsatzkontext (wofür wird das Material gebraucht?): {VALID_EINSATZKONTEXTE} oder null
+- suchmodus (Recherchestrategie): {VALID_SUCHMODI}
 - ergebnistypen: Teilmenge von {VALID_ERGEBNISTYPEN}
 - language: ISO-639-1 Code (z.B. "de", "en") oder null wenn mehrsprachig
 - thema: kurze Themenbeschreibung oder null wenn unklar

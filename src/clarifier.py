@@ -49,13 +49,7 @@ def apply_answer(classification: dict, axis: str, answer: str) -> dict:
     elif axis == "vorwissen" and answer.startswith("Experte"):
         updated["vorwissen"] = "Experte"
     elif axis == "intention":
-        mapping = {
-            "Überblick verschaffen": "orientieren",
-            "Problem lösen": "problemlösung",
-            "Gezielt suchen": "eigenschaftssuche",
-            "Breite Recherche": "recherche",
-        }
-        updated["intention"] = mapping.get(answer, answer)
+        updated["intention"] = answer
     elif axis == "rolle":
         if "Selbstlernen" in answer:
             updated["rolle"] = "Lernende"
@@ -63,6 +57,12 @@ def apply_answer(classification: dict, axis: str, answer: str) -> dict:
             updated["rolle"] = "Lehrende"
         elif "Forschung" in answer:
             updated["rolle"] = "Forschende"
+    elif axis == "bildungsstufe":
+        updated["bildungsstufe"] = answer
+    elif axis == "einsatzkontext":
+        updated["einsatzkontext"] = answer
+    elif axis == "suchmodus":
+        updated["suchmodus"] = answer.split(" (", 1)[0]
     elif axis == "format_preferred":
         updated["format_preferred"] = None if answer == "Kein Unterschied" else answer
     elif axis == "language":
@@ -90,9 +90,12 @@ def apply_answer(classification: dict, axis: str, answer: str) -> dict:
 if __name__ == "__main__":
     # demo: simulate one clarification turn
     sample_classification = {
-        "intention": "orientieren",
+        "intention": "Überblick erarbeiten",
         "vorwissen": "Einsteiger",
         "rolle": "Lernende",
+        "bildungsstufe": "Bachelor",
+        "einsatzkontext": "Selbststudium",
+        "suchmodus": "Explorativ",
         "thema": "Mathematik Beweise",
         "format_preferred": None,
         "language": "de",
@@ -101,6 +104,9 @@ if __name__ == "__main__":
             "intention": 0.95,
             "vorwissen": 0.85,
             "rolle": 0.9,
+            "bildungsstufe": 0.9,
+            "einsatzkontext": 0.85,
+            "suchmodus": 0.9,
             "thema": 0.9,
             "format_preferred": 0.6,
             "language": 0.95,
