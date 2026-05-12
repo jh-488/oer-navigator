@@ -1,0 +1,144 @@
+{
+  "description": "Situations-Taxonomie für den OER-Navigator. Definiert 5 Suchsituationen entlang der Achsen Intention × Vorwissen × Rolle. Abgeleitet aus dem Tag-1-Workshop (HackathOERn 2026, 11. Mai) und dem Eval-Korpus.",
+  "version": "1.0",
+  "source": "HackathOERn 2026, Tag 1 — Taxonomie-Workshop + Persona-Entwicklung",
+  "achsen": {
+    "intention": ["orientieren", "problemlösung", "eigenschaftssuche", "recherche", "problemorientiert"],
+    "vorwissen": ["Einsteiger", "Fortgeschrittene", "Experte"],
+    "rolle": ["Lernende", "Lehrende", "Forschende"],
+    "ergebnistypen": ["Materialien", "Events", "Personen"]
+  },
+  "situationen": [
+    {
+      "id": "S1",
+      "name": "Einstieg & Orientierung",
+      "intention": "orientieren",
+      "vorwissen": "Einsteiger",
+      "rolle": "Lernende",
+      "beschreibung": "Nutzer:in hat kein klares Ziel, sucht Überblick über ein Thema und einen Einstiegspfad.",
+      "typische_anfrage": "Grundstudium Mathematik Vorkurs Beweise — wo fange ich an?",
+      "persona_beispiel": "Jonas Richter",
+      "eval_query_id": "q01",
+      "ergebnistypen": ["Materialien", "Communities"],
+      "empfohlene_visualisierung": "Themenlandkarte",
+      "visualisierung_begruendung": "Themenlandkarte gibt räumlichen Überblick ohne vordefinierten Pfad — besser als Liste (zu unstrukturiert) oder DAG (setzt Vorwissen über Reihenfolge voraus).",
+      "rueckfrage_achsen": ["thema"],
+      "nostr_relevant": true
+    },
+    {
+      "id": "S2",
+      "name": "Akute Problemlösung",
+      "intention": "problemlösung",
+      "vorwissen": "Fortgeschrittene",
+      "rolle": "Lehrende",
+      "beschreibung": "Nutzer:in steht vor einem konkreten pädagogischen oder fachlichen Problem und braucht sofort einsetzbare Ressourcen.",
+      "typische_anfrage": "In meiner 9b hat jemand gesagt, Hitler habe auch was Gutes gemacht. Wie reagiere ich nächste Woche?",
+      "persona_beispiel": "Anna Berger",
+      "eval_query_id": "q02",
+      "ergebnistypen": ["Materialien", "Events", "Personen"],
+      "empfohlene_visualisierung": "Cards mit Community-Sidebar",
+      "visualisierung_begruendung": "Cards ermöglichen schnellen Überblick über Methoden-Materialien; Community-Sidebar zeigt Events (Fortbildungen) und Multiplikator-Kontakte parallel — besser als reine Liste (kein Community-Kontext) oder Graph (zu komplex für akuten Bedarf).",
+      "rueckfrage_achsen": [],
+      "nostr_relevant": true
+    },
+    {
+      "id": "S3",
+      "name": "Gezielte Eigenschaftssuche",
+      "intention": "eigenschaftssuche",
+      "vorwissen": "Fortgeschrittene",
+      "rolle": "Lehrende",
+      "beschreibung": "Nutzer:in kennt exakte Anforderungen (Lizenz, Format, Sprache, Niveau) und sucht Treffer, die alle Kriterien erfüllen.",
+      "typische_anfrage": "CC-BY Videos zu Machine Learning auf Deutsch",
+      "persona_beispiel": "Anna Berger",
+      "eval_query_id": "q03",
+      "ergebnistypen": ["Materialien"],
+      "empfohlene_visualisierung": "Facettierte Trefferliste",
+      "visualisierung_begruendung": "Facettierte Liste macht gesetzte Filter transparent und erlaubt Nachjustierung — besser als Themenlandkarte (keine Filterdarstellung) oder Cards (kein Facetten-Feedback).",
+      "rueckfrage_achsen": [],
+      "nostr_relevant": false
+    },
+    {
+      "id": "S4",
+      "name": "Breite Recherche",
+      "intention": "recherche",
+      "vorwissen": "Fortgeschrittene",
+      "rolle": "Lernende",
+      "beschreibung": "Nutzer:in will das gesamte Materialangebot zu einem Thema explorieren, inkl. Synonyme, Varianten und verwandte Begriffe.",
+      "typische_anfrage": "Alles zu Künstlicher Intelligenz — auch AI und maschinelles Lernen",
+      "persona_beispiel": "Jonas Richter",
+      "eval_query_id": "q04",
+      "ergebnistypen": ["Materialien", "Communities"],
+      "empfohlene_visualisierung": "Graph-Explorer",
+      "visualisierung_begruendung": "Graph-Explorer macht Begriffscluster und Verbindungen sichtbar, unterstützt Synonym-Exploration — besser als Liste (keine Beziehungsdarstellung) oder Themenlandkarte (kein Synonym-Mapping).",
+      "rueckfrage_achsen": ["language"],
+      "nostr_relevant": true
+    },
+    {
+      "id": "S5",
+      "name": "Problemorientierte Suche",
+      "intention": "problemorientiert",
+      "vorwissen": "Fortgeschrittene",
+      "rolle": "Lehrende",
+      "beschreibung": "Nutzer:in beschreibt ein pädagogisches Problem ohne klares Suchwort — das System muss Thema und Format erst erschließen.",
+      "typische_anfrage": "Meine Studierenden sind so inaktiv im Seminar — wie kann ich sie aktivieren?",
+      "persona_beispiel": "Anna Berger",
+      "eval_query_id": "q05",
+      "ergebnistypen": ["Materialien", "Events", "Personen"],
+      "empfohlene_visualisierung": "Cards mit Community-Sidebar",
+      "visualisierung_begruendung": "Ähnlich wie S2: Methoden-Cards + Community-Sidebar für Events/Personen — Thema ist unbekannt, daher kein Graph sinnvoll; Rückfrage nach Fachdomäne klärt Kontext vor der Suche.",
+      "rueckfrage_achsen": ["thema"],
+      "nostr_relevant": true
+    }
+  ],
+  "visualisierungskatalog": [
+    {
+      "id": "V1",
+      "name": "Themenlandkarte",
+      "beschreibung": "Räumliche Darstellung von Themenclustern (D3.js force/bubble layout). Gibt Überblick ohne vordefinierten Pfad.",
+      "geeignet_fuer": ["orientieren"],
+      "nicht_geeignet": "Wenn Nutzer:in bereits weiß, was sie sucht — dann zu wenig Filterung."
+    },
+    {
+      "id": "V2",
+      "name": "Lernpfad-DAG",
+      "beschreibung": "Gerichteter azyklischer Graph (D3.js) der Lernschritte — zeigt empfohlene Reihenfolge.",
+      "geeignet_fuer": ["orientieren", "recherche"],
+      "nicht_geeignet": "Setzt Vorwissen über sinnvolle Reihenfolge voraus — ungeeignet für Einsteiger ohne Vorstruktur."
+    },
+    {
+      "id": "V3",
+      "name": "Cards mit Community-Sidebar",
+      "beschreibung": "Raster-Cards für Materialien + rechte Sidebar mit Events und Personen/Communities.",
+      "geeignet_fuer": ["problemlösung", "problemorientiert"],
+      "nicht_geeignet": "Wenn nur Materialien gesucht werden — Community-Sidebar wäre leer und ablenkend."
+    },
+    {
+      "id": "V4",
+      "name": "Facettierte Trefferliste",
+      "beschreibung": "Klassische Suchliste mit Filterleiste (Lizenz, Format, Sprache, Niveau) links.",
+      "geeignet_fuer": ["eigenschaftssuche"],
+      "nicht_geeignet": "Wenn Nutzer:in die Parameter nicht kennt — Filterleiste ist dann überwältigend."
+    },
+    {
+      "id": "V5",
+      "name": "Graph-Explorer",
+      "beschreibung": "Interaktiver Graph mit Begriffsknoten und Kanten (D3.js force simulation). Unterstützt Synonym-Navigation.",
+      "geeignet_fuer": ["recherche"],
+      "nicht_geeignet": "Bei akutem Bedarf — Graph braucht Zeit zur Exploration."
+    },
+    {
+      "id": "V6",
+      "name": "Liste",
+      "beschreibung": "Einfache Ergebnisliste ohne spezielle Darstellung. Universeller Fallback.",
+      "geeignet_fuer": ["alle"],
+      "nicht_geeignet": "Wenn strukturierter Kontext entscheidend ist — Liste zeigt keine Beziehungen."
+    }
+  ],
+  "zuordnungsmatrix": {
+    "orientieren":       { "primary": "V1", "fallback": "V2", "last_resort": "V6" },
+    "problemlösung":     { "primary": "V3", "fallback": "V6", "last_resort": "V6" },
+    "eigenschaftssuche": { "primary": "V4", "fallback": "V6", "last_resort": "V6" },
+    "recherche":         { "primary": "V5", "fallback": "V2", "last_resort": "V6" },
+    "problemorientiert": { "primary": "V3", "fallback": "V6", "last_resort": "V6" }
+  }
+}

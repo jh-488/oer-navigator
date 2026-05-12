@@ -1,0 +1,98 @@
+{
+  "description": "Eval-Korpus für den OER-Navigator Klassifikator-Smoke-Test. Basiert auf den Ergebnissen des Tag-1-Workshops (HackathOERn 2026, 11. Mai). Abdeckung: 5 Intentionen × 2 Personas × 3 Ergebnistypen (Materialien, Events, Personen/Communities).",
+  "source": "HackathOERn 2026, Tag 1 — Taxonomie-Workshop + Persona-Entwicklung",
+  "intentionen": ["orientieren", "problemorientiert", "eigenschaftssuche", "recherche", "problemlösung"],
+  "personas": ["Anna Berger (Demokratiebildung-Lehrerin)", "Jonas Richter (Informatik-Erstsemester, TUBAF Freiberg)"],
+  "queries": [
+    {
+      "id": "q01",
+      "persona": "Jonas Richter",
+      "natural_language": "Grundstudium Mathematik Vorkurs Beweise — wo fange ich an?",
+      "context": "Erstsemester-Student ohne Hochschul-Mathematikerfahrung, sucht Orientierung im Vorkurs",
+      "expected": {
+        "intention": "orientieren",
+        "vorwissen": "Einsteiger",
+        "rolle": "Lernende",
+        "thema": "Mathematik Beweise",
+        "format_preferred": null,
+        "language": "de",
+        "ergebnistypen": ["Materialien", "Communities"]
+      },
+      "pain_point": "Die Suche liefert eine ungeordnete Trefferliste statt eines kuratierten Einstiegspfads — kein Orientierungsmodus, keine Lerngruppen-Hinweise",
+      "nostr_relevant": true,
+      "notes": "Orientierungsmodus als Default — Jonas braucht Themenlandkarte oder Lernpfad, nicht 500 Einzeltreffer. NOSTR-Lerngruppen sind genauso wichtig wie Materialien."
+    },
+    {
+      "id": "q02",
+      "persona": "Anna Berger",
+      "natural_language": "In meiner 9b hat jemand gesagt, Hitler habe auch was Gutes gemacht. Wie reagiere ich nächste Woche?",
+      "context": "Lehrerin für Demokratiebildung, akuter Vorfall in der Klasse, braucht sofort einsetzbare Methoden",
+      "expected": {
+        "intention": "problemlösung",
+        "vorwissen": "Fortgeschrittene",
+        "rolle": "Lehrende",
+        "thema": "Demokratiebildung Rechtsextremismus",
+        "format_preferred": "Methode",
+        "language": "de",
+        "ergebnistypen": ["Materialien", "Events", "Personen"]
+      },
+      "pain_point": "OERSI ist fächerbasiert — Demokratiebildung als Querschnittskompetenz findet keinen passenden Fach-Filter. Außerdem fehlen Events (Fortbildungen) und Personen/Netzwerke als Ergebnistypen.",
+      "nostr_relevant": true,
+      "notes": "Primärer Demo-Testfall für Anna. Alle drei Knotentypen müssen erscheinen: Methoden-Material + Fortbildungs-Event (z.B. relilab) + Multiplikator-Kontakte. Rückfrage höchstens eine."
+    },
+    {
+      "id": "q03",
+      "persona": "Anna Berger",
+      "natural_language": "CC-BY Videos zu Machine Learning auf Deutsch",
+      "context": "Lehrperson sucht Material mit spezifischen Eigenschaften: Lizenz + Format + Sprache",
+      "expected": {
+        "intention": "eigenschaftssuche",
+        "vorwissen": "Fortgeschrittene",
+        "rolle": "Lehrende",
+        "thema": "Machine Learning",
+        "format_preferred": "Video",
+        "language": "de",
+        "ergebnistypen": ["Materialien"]
+      },
+      "pain_point": "Der Lizenz-Filter (CC-BY) existiert in OERSI, muss aber manuell gesetzt werden — die natürlichsprachliche Anfrage enthält alle Parameter, das System bildet sie nicht automatisch ab",
+      "nostr_relevant": false,
+      "notes": "Sauberster Klassifikations-Testfall: alle Parameter explizit angegeben. Klassifikator sollte ohne Rückfrage direkt gefilterte Ergebnisse liefern."
+    },
+    {
+      "id": "q04",
+      "persona": "Jonas Richter",
+      "natural_language": "Alles zu Künstlicher Intelligenz — auch AI und maschinelles Lernen",
+      "context": "Student macht eine Recherche und weiß, dass Synonyme und Varianten wichtig sind",
+      "expected": {
+        "intention": "recherche",
+        "vorwissen": "Fortgeschrittene",
+        "rolle": "Lernende",
+        "thema": "Künstliche Intelligenz",
+        "format_preferred": null,
+        "language": null,
+        "ergebnistypen": ["Materialien", "Communities"]
+      },
+      "pain_point": "OERSI berücksichtigt Synonyme und Varianten nicht — 'KI', 'AI', 'maschinelles Lernen' werden als getrennte Suchanfragen behandelt. Kein automatisches Synonym-Mapping via DNB-Schlagwortkatalog.",
+      "nostr_relevant": true,
+      "notes": "Testet Synonym-Expansion im Klassifikator. Sprache ist null weil der Nutzer explizit mehrsprachig suchen will."
+    },
+    {
+      "id": "q05",
+      "persona": "Anna Berger",
+      "natural_language": "Meine Studierenden sind so inaktiv im Seminar — wie kann ich sie aktivieren?",
+      "context": "Lehrperson mit pädagogischem Problem, sucht aktivierende Methoden, kein konkretes Thema",
+      "expected": {
+        "intention": "problemorientiert",
+        "vorwissen": "Fortgeschrittene",
+        "rolle": "Lehrende",
+        "thema": null,
+        "format_preferred": "Methode",
+        "language": "de",
+        "ergebnistypen": ["Materialien", "Events", "Personen"]
+      },
+      "pain_point": "Die Anfrage beschreibt ein pädagogisches Problem, kein Suchwort — OERSI kann damit nichts anfangen. Es fehlt eine problemorientierte Suchdimension und der Zugang zu Communitywissen.",
+      "nostr_relevant": true,
+      "notes": "Guter Testfall für den Rückfragemodus: Thema ist null, aber Format (Methode) ist implizit. Klassifikator sollte nach Fachdomäne fragen. NOSTR-Events (Fortbildungen zu Aktivierungsmethoden) sind hier besonders wertvoll."
+    }
+  ]
+}
