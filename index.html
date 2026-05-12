@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OER-Navigator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>OER-Navigator</h1>
+    <p class="tagline">Passende Materialien besser finden</p>
+  </header>
+
+  <main>
+    <section id="search-section">
+      <form id="search-form">
+        <textarea id="query-input" rows="3" placeholder="Was suchen Sie? Beschreiben Sie Ihr Anliegen in eigenen Worten …"></textarea>
+        <button type="submit" id="search-btn">Suchen</button>
+      </form>
+    </section>
+
+    <section id="clarification-section" class="hidden">
+      <div id="clarification-box">
+        <p id="clarification-question"></p>
+        <div id="clarification-options"></div>
+        <input type="text" id="clarification-free" placeholder="Oder eigene Antwort eingeben …" />
+        <button id="clarification-submit">Weiter</button>
+      </div>
+    </section>
+
+    <section id="profile-section" class="hidden">
+      <div id="search-profile">
+        <span class="profile-label">Suchprofil:</span>
+        <span id="profile-tags"></span>
+      </div>
+    </section>
+
+    <section id="results-section" class="hidden">
+      <div id="view-selector">
+        <span id="view-label"></span>
+      </div>
+      <div id="results-container"></div>
+    </section>
+
+    <div id="loading" class="hidden">
+      <div class="spinner"></div>
+      <span>Wird geladen …</span>
+    </div>
+
+    <div id="error-banner" class="hidden"></div>
+  </main>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
