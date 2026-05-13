@@ -482,27 +482,56 @@ footer {
   text-align: center;
 }
 
-/* ─── Events section ─────────────────────────────────────────────────── */
-#events-section { margin-top: 2.5rem; }
+/* ─── Tab bar ────────────────────────────────────────────────────────── */
+#tab-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
 
-.section-heading {
+.tab-btn {
   font-family: var(--font-heading);
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.45rem 1.1rem;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
   color: var(--ink);
-  margin-bottom: 1rem;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  transition: background 0.15s, color 0.15s;
 }
 
-.event-card {
-  border-left: 4px solid var(--lime);
+.tab-btn:hover:not(:disabled) { background: var(--lime); }
+.tab-btn.active { background: var(--ink); color: #fff; }
+.tab-btn:disabled { opacity: 0.35; cursor: default; }
+
+.tab-count {
+  background: var(--lime);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0 0.45rem;
+  line-height: 1.5;
 }
 
+.tab-btn.active .tab-count { background: #fff; color: var(--ink); }
+
+.view-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+/* ─── Events panel ───────────────────────────────────────────────────── */
+.event-card { border-left: 4px solid var(--lime); }
 .event-card h3 a { color: var(--ink); text-decoration: none; }
 .event-card h3 a:hover { color: var(--emerald); text-decoration: underline; }
-
 .meta-tag.event-date { background: var(--lime); }
 .meta-tag.event-loc  { background: var(--sky); }
 

@@ -39,7 +39,7 @@
       </div>
       <div class="brand-text">
         <h1>Navigat<span class="oer">OER</span></h1>
-        <p class="tagline">Der Laligator findet passende OER-Materialien für dich.</p>
+        <p class="tagline">Der NavigatOER findet passende OER-Materialien für dich.</p>
       </div>
     </div>
   </header>
@@ -86,17 +86,17 @@
     </section>
 
     <section id="results-section" class="hidden">
-      <div id="view-selector">
-        <span id="view-label"></span>
+      <div id="tab-bar">
+        <button id="tab-materials" class="tab-btn active" type="button">Materialien <span id="materials-count" class="tab-count"></span></button>
+        <button id="tab-events" class="tab-btn" type="button">Veranstaltungen <span id="events-count" class="tab-count"></span></button>
       </div>
-      <div id="results-container"></div>
-    </section>
-
-    <section id="events-section" class="hidden">
-      <h2 class="section-heading">
-        <span class="section-icon" aria-hidden="true">📅</span> Veranstaltungen
-      </h2>
-      <div id="events-container"></div>
+      <div id="tab-materials-panel">
+        <span id="view-label" class="view-label"></span>
+        <div id="results-container"></div>
+      </div>
+      <div id="tab-events-panel" class="hidden">
+        <div id="events-container"></div>
+      </div>
     </section>
 
     <div id="loading" class="hidden">

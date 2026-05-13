@@ -30,8 +30,13 @@ const brandMascot = document.getElementById("brand-mascot");
 const resultsSection = document.getElementById("results-section");
 const resultsContainer = document.getElementById("results-container");
 const viewLabel = document.getElementById("view-label");
-const eventsSection = document.getElementById("events-section");
 const eventsContainer = document.getElementById("events-container");
+const eventsCount = document.getElementById("events-count");
+const materialsCount = document.getElementById("materials-count");
+const tabMaterials = document.getElementById("tab-materials");
+const tabEvents = document.getElementById("tab-events");
+const tabMaterialsPanel = document.getElementById("tab-materials-panel");
+const tabEventsPanel = document.getElementById("tab-events-panel");
 const loading = document.getElementById("loading");
 const errorBanner = document.getElementById("error-banner");
 
@@ -83,6 +88,23 @@ clarificationFree.addEventListener("keydown", (e) => {
   }
 });
 
+tabMaterials.addEventListener("click", () => switchTab("materials"));
+tabEvents.addEventListener("click", () => switchTab("events"));
+
+function switchTab(tab) {
+  if (tab === "materials") {
+    tabMaterials.classList.add("active");
+    tabEvents.classList.remove("active");
+    show(tabMaterialsPanel);
+    hide(tabEventsPanel);
+  } else {
+    tabEvents.classList.add("active");
+    tabMaterials.classList.remove("active");
+    show(tabEventsPanel);
+    hide(tabMaterialsPanel);
+  }
+}
+
 // --- API calls ---
 async function runClassify(query) {
   if (state.searching) return;
@@ -93,8 +115,10 @@ async function runClassify(query) {
   hide(profileSection);
   resultsContainer.innerHTML = "";
   eventsContainer.innerHTML = "";
+  eventsCount.textContent = "";
+  materialsCount.textContent = "";
   hide(resultsSection);
-  hide(eventsSection);
+  switchTab("materials");
   state.negativeKeywords = [];
   state.excludeIds = [];
   state.lastResults = [];
@@ -156,6 +180,7 @@ async function runSearch() {
     state.lastResults = res.results || [];
     state.lastVisualization = res.visualization;
     renderResults(res);
+    materialsCount.textContent = state.lastResults.length || "";
     renderEvents(res.events || []);
     show(resultsSection);
     setMascotState(state.lastResults.length ? "eureka" : "sleep");
@@ -566,12 +591,12 @@ function makeCard(item, cardStyle) {
 
 function renderEvents(events) {
   eventsContainer.innerHTML = "";
+  eventsCount.textContent = events.length || "";
   if (!events.length) {
-    hide(eventsSection);
+    eventsContainer.innerHTML = "<p style='color:var(--muted)'>Keine Veranstaltungen gefunden.</p>";
     return;
   }
   events.forEach((ev) => eventsContainer.appendChild(makeEventCard(ev)));
-  show(eventsSection);
 }
 
 function makeEventCard(ev) {
