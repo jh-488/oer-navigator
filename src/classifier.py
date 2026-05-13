@@ -140,7 +140,7 @@ def classify(query: str) -> dict:
             logger.info("classify: trying DWGD model=%s", DWGD_MODEL)
             dwgd = OpenAI(api_key=DWGD_API_KEY, base_url=DWGD_BASE_URL)
             raw = _chat_json(dwgd, DWGD_MODEL, prompt)
-            provider = "DWGD"
+            provider = f"DWGD ({DWGD_MODEL})"
             logger.info("classify: succeeded with DWGD model=%s", DWGD_MODEL)
         except Exception as e:
             logger.warning("classify: DWGD model=%s failed: %s", DWGD_MODEL, e)
