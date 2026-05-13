@@ -8,7 +8,11 @@ KI-gestützte Suche nach Open Educational Resources (OER) für Lehrende und Lern
 
 ## Was ist NavigatOER?
 
-NavigatOER ist ein intelligenter OER-Navigator, der Nutzer durch gezielte Rückfragen ein Suchprofil aufbaut und passende Lernmaterialien aus dem [OERSI](https://oersi.org)-Katalog empfiehlt. Das Persona-System erkennt, ob jemand als Lehrende/r oder Lernende/r sucht, und passt die Ergebnisse entsprechend an.
+NavigatOER ist ein intelligenter OER-Navigator, der Nutzer durch gezielte Rückfragen ein Suchprofil aufbaut und passende Lernmaterialien sowie Bildungsveranstaltungen findet. Das Persona-System erkennt, ob jemand als Lehrende/r oder Lernende/r sucht, und passt die Ergebnisse entsprechend an.
+
+**Ergebnistypen:**
+- **Materialien** — OER aus dem [OERSI](https://oersi.org)-Katalog (Videos, Skripte, Übungsaufgaben, …)
+- **Veranstaltungen** — Bildungstermine aus dem [edufeed.org](https://edufeed.org)-NOSTR-Relay (Workshops, Webinare, Vernetzungstreffen)
 
 ## Architektur
 
@@ -24,6 +28,7 @@ data/       → Evaluierungskorpus & Hilfsdaten
 | Backend | Python · FastAPI · Uvicorn |
 | LLM | DWGD API (Meta Llama 3.1 70B) |
 | OER-Katalog | OERSI REST API |
+| Veranstaltungen | NOSTR Relay `wss://relay.edufeed.org` · Kind 31923 (NIP-52) |
 | Hosting Frontend | GitHub Pages |
 | Hosting Backend | Render |
 
