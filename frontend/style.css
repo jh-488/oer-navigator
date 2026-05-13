@@ -529,7 +529,15 @@ footer {
 }
 
 /* ─── Events panel ───────────────────────────────────────────────────── */
-.event-card { border-left: 4px solid var(--lime); }
+.event-card { position: relative; overflow: hidden; }
+.event-card::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 8px;
+  background: var(--lime);
+  border-right: 2.5px solid var(--ink);
+}
 .event-card h3 a { color: var(--ink); text-decoration: none; }
 .event-card h3 a:hover { color: var(--emerald); text-decoration: underline; }
 .meta-tag.event-date { background: var(--lime); }
