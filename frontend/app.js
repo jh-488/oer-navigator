@@ -4,6 +4,7 @@ let state = {
   classification: null,
   currentAxis: null,
   selectedOption: null,
+  selectedOptions: [],
   lastResults: [],
   lastVisualization: null,
   negativeKeywords: [],
@@ -217,20 +218,34 @@ async function post(path, body) {
 function showClarification(question) {
   state.currentAxis = question.axis;
   state.selectedOption = null;
+  state.selectedOptions = [];
   clarificationQuestion.textContent = question.frage;
   clarificationOptions.innerHTML = "";
   clarificationFree.value = "";
 
   if (question.optionen) {
+    const multi = !!question.multi;
+    state.selectedOptions = multi ? [] : null;
+
     question.optionen.forEach((opt) => {
       const btn = document.createElement("button");
       btn.className = "option-btn";
       btn.type = "button";
       btn.textContent = opt;
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".option-btn").forEach((b) => b.classList.remove("selected"));
-        btn.classList.add("selected");
-        state.selectedOption = opt;
+        if (!multi) {
+          document.querySelectorAll(".option-btn").forEach((b) => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          state.selectedOption = opt;
+        } else {
+          btn.classList.toggle("selected");
+          if (btn.classList.contains("selected")) {
+            state.selectedOptions.push(opt);
+          } else {
+            state.selectedOptions = state.selectedOptions.filter((o) => o !== opt);
+          }
+          state.selectedOption = state.selectedOptions.length ? state.selectedOptions.join(", ") : null;
+        }
       });
       clarificationOptions.appendChild(btn);
     });
@@ -329,39 +344,61 @@ function renderFaceted(items) {
   const sidebar = document.createElement("div");
   sidebar.id = "facet-sidebar";
 
-  const formats = [...new Set(items.flatMap((i) => {
+  const getFormats = (i) => {
     const lrt = i.learningResourceType || [];
     return lrt.map((l) => l?.prefLabel?.de || l?.prefLabel?.en || "").filter(Boolean);
-  }))];
-  const langCodes = [...new Set(items.flatMap((i) => {
-    const v = i.inLanguage;
-    return Array.isArray(v) ? v : v ? [v] : [];
-  }).filter(Boolean))];
+  };
   const langLabels = { de: "Deutsch", en: "Englisch", fr: "Französisch", es: "Spanisch" };
-  const langs = langCodes.map((c) => langLabels[c] || c);
+  const getLangs = (i) => {
+    const v = i.inLanguage;
+    const codes = Array.isArray(v) ? v : v ? [v] : [];
+    return codes.map((c) => langLabels[c] || c);
+  };
 
-  if (formats.length) sidebar.appendChild(makeFacetGroup("Format", formats));
-  if (langs.length) sidebar.appendChild(makeFacetGroup("Sprache", langs));
+  const formats = [...new Set(items.flatMap(getFormats))];
+  const langs = [...new Set(items.flatMap(getLangs).filter(Boolean))];
 
   const list = document.createElement("div");
   list.id = "faceted-results";
   items.forEach((item) => list.appendChild(makeCard(item, false)));
+
+  function applyFacets() {
+    const checkedFormats = [...sidebar.querySelectorAll(".facet-group[data-facet='Format'] input:checked")].map((cb) => cb.value);
+    const checkedLangs = [...sidebar.querySelectorAll(".facet-group[data-facet='Sprache'] input:checked")].map((cb) => cb.value);
+    const cards = list.querySelectorAll(".result-card");
+    items.forEach((item, idx) => {
+      const card = cards[idx];
+      if (!card) return;
+      const fmatch = !checkedFormats.length || getFormats(item).some((f) => checkedFormats.includes(f));
+      const lmatch = !checkedLangs.length || getLangs(item).some((l) => checkedLangs.includes(l));
+      card.style.display = fmatch && lmatch ? "" : "none";
+    });
+  }
+
+  if (formats.length) sidebar.appendChild(makeFacetGroup("Format", formats, applyFacets));
+  if (langs.length) sidebar.appendChild(makeFacetGroup("Sprache", langs, applyFacets));
 
   wrapper.appendChild(sidebar);
   wrapper.appendChild(list);
   resultsContainer.appendChild(wrapper);
 }
 
-function makeFacetGroup(label, values) {
+function makeFacetGroup(label, values, onChange) {
   const group = document.createElement("div");
   group.className = "facet-group";
+  group.dataset.facet = label;
   const h4 = document.createElement("h4");
   h4.textContent = label;
   group.appendChild(h4);
   values.forEach((v) => {
     const item = document.createElement("label");
     item.className = "facet-item";
-    item.innerHTML = `<input type="checkbox" /> <span>${escHtml(v)}</span>`;
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.value = v;
+    cb.addEventListener("change", onChange);
+    item.appendChild(cb);
+    item.appendChild(document.createTextNode(" " + v));
     group.appendChild(item);
   });
   return group;

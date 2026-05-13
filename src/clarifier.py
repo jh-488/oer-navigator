@@ -35,6 +35,7 @@ def get_next_question(classification: dict) -> dict | None:
         "axis": chosen_axis,
         "frage": vorlage["frage"],
         "optionen": vorlage["optionen"],
+        "multi": vorlage.get("multi", False),
     }
 
 
@@ -64,7 +65,12 @@ def apply_answer(classification: dict, axis: str, answer: str) -> dict:
     elif axis == "suchmodus":
         updated["suchmodus"] = answer.split(" (", 1)[0]
     elif axis == "format_preferred":
-        updated["format_preferred"] = None if answer == "Kein Unterschied" else answer
+        if isinstance(answer, list):
+            formats = answer
+        else:
+            formats = [a.strip() for a in answer.split(",")]
+        formats = [f for f in formats if f and f != "Kein Unterschied"]
+        updated["format_preferred"] = formats if formats else None
     elif axis == "language":
         mapping = {"Deutsch": "de", "Englisch": "en", "Beides / egal": None}
         updated["language"] = mapping.get(answer, answer)

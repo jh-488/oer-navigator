@@ -18,6 +18,37 @@ from src.similarity import refine_after_rejection
 TWILLO_PATH = Path(__file__).parent.parent / "data" / "twillo_corpus.json"
 TAXONOMY_PATH = Path(__file__).parent.parent / "data" / "situations_taxonomy.json"
 
+# Maps UI format options → HCRT learningResourceType.prefLabel.de values
+FORMAT_MAP: dict[str, list[str]] = {
+    "Video": ["Video", "Audio"],
+    "Skript / Text": ["Skript", "Textdokument", "Lehrbuch", "Nachschlagewerk"],
+    "Übungsaufgaben": ["Übung", "Lernkontrolle", "Fragebogen", "Lernspiel"],
+    "Methode / Aktivität": ["Unterrichtsplanung", "Arbeitsmaterial", "Fallstudie", "Präsentation"],
+}
+
+
+def _lrt_labels(hit: dict) -> set[str]:
+    """Extract all learningResourceType German labels from a result hit."""
+    labels = set()
+    for lrt in hit.get("learningResourceType") or []:
+        de = lrt.get("prefLabel", {}).get("de")
+        if de:
+            labels.add(de)
+    return labels
+
+
+def _filter_by_format(hits: list[dict], format_preferred) -> list[dict]:
+    """Filter hits to those matching any of the preferred formats. Returns all hits if no filter."""
+    if not format_preferred:
+        return hits
+    formats = format_preferred if isinstance(format_preferred, list) else [format_preferred]
+    allowed = set()
+    for f in formats:
+        allowed.update(FORMAT_MAP.get(f, [f]))
+    if not allowed:
+        return hits
+    return [h for h in hits if _lrt_labels(h) & allowed] or hits
+
 app = FastAPI(title="OER-Navigator API")
 
 app.add_middleware(
@@ -78,25 +109,25 @@ def search(req: SearchRequest):
     language = clf.get("language")
     format_preferred = clf.get("format_preferred")
 
-    search_text = thema
-    if format_preferred:
-        search_text = f"{thema} {format_preferred}".strip()
+    fmt_hint = " ".join(format_preferred) if isinstance(format_preferred, list) else (format_preferred or "")
+    search_text = f"{thema} {fmt_hint}".strip() if fmt_hint else thema
 
     try:
         raw = simple_search(
             search_text,
-            size=req.size,
+            size=req.size * 3,
             lang=language,
             negative_keywords=req.negative_keywords,
             exclude_ids=req.exclude_ids,
         )
         hits = [h["_source"] for h in raw["hits"]["hits"]]
     except Exception:
-        hits = _fallback_search(search_text, req.size)
+        hits = _fallback_search(search_text, req.size * 3)
         if req.exclude_ids:
             excl = set(req.exclude_ids)
             hits = [h for h in hits if (h.get("id") or h.get("@id")) not in excl]
 
+    hits = _filter_by_format(hits, format_preferred)[:req.size]
     visualization = _get_visualization(clf.get("intention", "Überblick erarbeiten"))
 
     return {
@@ -134,22 +165,25 @@ def refine(req: RefineRequest):
 
     thema = clf.get("thema") or ""
     format_preferred = clf.get("format_preferred")
-    search_text = f"{thema} {format_preferred}".strip() if format_preferred else thema
+    fmt_hint = " ".join(format_preferred) if isinstance(format_preferred, list) else (format_preferred or "")
+    search_text = f"{thema} {fmt_hint}".strip() if fmt_hint else thema
     language = clf.get("language")
 
     try:
         raw = simple_search(
             search_text,
-            size=req.size,
+            size=req.size * 3,
             lang=language,
             negative_keywords=negative_keywords,
             exclude_ids=exclude_ids,
         )
         hits = [h["_source"] for h in raw["hits"]["hits"]]
     except Exception:
-        hits = _fallback_search(search_text, req.size)
+        hits = _fallback_search(search_text, req.size * 3)
         excl = set(exclude_ids)
         hits = [h for h in hits if (h.get("id") or h.get("@id")) not in excl]
+
+    hits = _filter_by_format(hits, format_preferred)[:req.size]
 
     visualization = _get_visualization(clf.get("intention", "Überblick erarbeiten"))
 

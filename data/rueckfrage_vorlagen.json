@@ -30,8 +30,9 @@
       "optionen": null
     },
     "format_preferred": {
-      "frage": "Bevorzugen Sie ein bestimmtes Format?",
-      "optionen": ["Video", "Skript / Text", "Übungsaufgaben", "Methode / Aktivität", "Kein Unterschied"]
+      "frage": "Bevorzugen Sie ein bestimmtes Format? (Mehrfachauswahl möglich)",
+      "optionen": ["Video", "Skript / Text", "Übungsaufgaben", "Methode / Aktivität", "Kein Unterschied"],
+      "multi": true
     },
     "language": {
       "frage": "In welcher Sprache sollen die Materialien sein?",
