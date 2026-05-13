@@ -528,12 +528,16 @@ function renderGraph(items) {
 
     nodeEnter.filter((d) => !d.isCenter && d.url && d.url !== "#")
       .append("text")
-      .attr("dy", -14)
-      .attr("dx", 12)
+      .attr("dy", -16)
+      .attr("dx", 14)
       .attr("text-anchor", "middle")
-      .style("font-size", "0.7rem")
+      .style("font-size", "1rem")
+      .style("font-weight", "bold")
       .style("cursor", "pointer")
       .style("fill", "#142a2a")
+      .style("stroke", "#f0e6c8")
+      .style("stroke-width", "3px")
+      .style("paint-order", "stroke")
       .text("↗")
       .on("click", (e, d) => {
         e.stopPropagation();
