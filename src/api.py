@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from pathlib import Path
@@ -12,6 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 from src.classifier import classify, needs_clarification
 from src.clarifier import apply_answer, get_next_question
+from src.nostr_client import search_events
 from src.oersi_client import simple_search
 from src.similarity import refine_after_rejection
 
@@ -103,7 +105,7 @@ def clarify(req: ClarifyRequest):
 
 
 @app.post("/search")
-def search(req: SearchRequest):
+async def search(req: SearchRequest):
     clf = req.classification
     thema = clf.get("thema") or ""
     language = clf.get("language")
@@ -112,29 +114,36 @@ def search(req: SearchRequest):
     fmt_hint = " ".join(format_preferred) if isinstance(format_preferred, list) else (format_preferred or "")
     search_text = f"{thema} {fmt_hint}".strip() if fmt_hint else thema
 
-    try:
-        raw = simple_search(
-            search_text,
-            size=req.size * 3,
-            lang=language,
-            negative_keywords=req.negative_keywords,
-            exclude_ids=req.exclude_ids,
-        )
-        hits = [h["_source"] for h in raw["hits"]["hits"]]
-    except Exception:
-        hits = _fallback_search(search_text, req.size * 3)
-        if req.exclude_ids:
-            excl = set(req.exclude_ids)
-            hits = [h for h in hits if (h.get("id") or h.get("@id")) not in excl]
+    async def _oersi():
+        try:
+            raw = simple_search(
+                search_text,
+                size=req.size * 3,
+                lang=language,
+                negative_keywords=req.negative_keywords,
+                exclude_ids=req.exclude_ids,
+            )
+            hits = [h["_source"] for h in raw["hits"]["hits"]]
+        except Exception:
+            hits = _fallback_search(search_text, req.size * 3)
+            if req.exclude_ids:
+                excl = set(req.exclude_ids)
+                hits = [h for h in hits if (h.get("id") or h.get("@id")) not in excl]
+        return _filter_by_format(hits, format_preferred)[:req.size]
 
-    hits = _filter_by_format(hits, format_preferred)[:req.size]
+    async def _nostr_events():
+        return await search_events(thema, limit=req.size)
+
+    hits, events = await asyncio.gather(_oersi(), _nostr_events())
+
     visualization = _get_visualization(clf.get("intention", "Überblick erarbeiten"))
 
     return {
         "results": hits,
+        "events": events,
         "visualization": visualization,
         "total": len(hits),
-        "source": "oersi",
+        "source": "oersi+nostr",
     }
 
 

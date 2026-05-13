@@ -482,6 +482,36 @@ footer {
   text-align: center;
 }
 
+/* ─── Events section ─────────────────────────────────────────────────── */
+#events-section { margin-top: 2.5rem; }
+
+.section-heading {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.event-card {
+  border-left: 4px solid var(--lime);
+}
+
+.event-card h3 a { color: var(--ink); text-decoration: none; }
+.event-card h3 a:hover { color: var(--emerald); text-decoration: underline; }
+
+.meta-tag.event-date { background: var(--lime); }
+.meta-tag.event-loc  { background: var(--sky); }
+
+#events-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 /* ─── Utility ────────────────────────────────────────────────────────── */
 .hidden { display: none !important; }
 

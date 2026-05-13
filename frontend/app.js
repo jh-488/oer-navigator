@@ -30,6 +30,8 @@ const brandMascot = document.getElementById("brand-mascot");
 const resultsSection = document.getElementById("results-section");
 const resultsContainer = document.getElementById("results-container");
 const viewLabel = document.getElementById("view-label");
+const eventsSection = document.getElementById("events-section");
+const eventsContainer = document.getElementById("events-container");
 const loading = document.getElementById("loading");
 const errorBanner = document.getElementById("error-banner");
 
@@ -90,7 +92,9 @@ async function runClassify(query) {
   hide(clarificationSection);
   hide(profileSection);
   resultsContainer.innerHTML = "";
+  eventsContainer.innerHTML = "";
   hide(resultsSection);
+  hide(eventsSection);
   state.negativeKeywords = [];
   state.excludeIds = [];
   state.lastResults = [];
@@ -152,6 +156,7 @@ async function runSearch() {
     state.lastResults = res.results || [];
     state.lastVisualization = res.visualization;
     renderResults(res);
+    renderEvents(res.events || []);
     show(resultsSection);
     setMascotState(state.lastResults.length ? "eureka" : "sleep");
     setTimeout(() => setMascotState("idle"), 1500);
@@ -556,6 +561,47 @@ function makeCard(item, cardStyle) {
     e.stopImmediatePropagation();
     runRefine(item, card);
   }, { once: true });
+  return card;
+}
+
+function renderEvents(events) {
+  eventsContainer.innerHTML = "";
+  if (!events.length) {
+    hide(eventsSection);
+    return;
+  }
+  events.forEach((ev) => eventsContainer.appendChild(makeEventCard(ev)));
+  show(eventsSection);
+}
+
+function makeEventCard(ev) {
+  const card = document.createElement("div");
+  card.className = "result-card event-card";
+
+  const url = ev.url || "#";
+  const title = ev.title || "Ohne Titel";
+  const summary = ev.summary || "";
+  const location = ev.location || "";
+  const tags = ev.tags || [];
+
+  const fmtDate = (iso) => {
+    if (!iso) return null;
+    const d = new Date(iso + "Z");
+    return isNaN(d) ? null : d.toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+  const startStr = fmtDate(ev.start);
+  const endStr = fmtDate(ev.end);
+  const dateStr = startStr ? (endStr ? `${startStr} – ${endStr}` : startStr) : "";
+
+  card.innerHTML = `
+    <h3><a href="${url !== "#" ? escHtml(url) : "#"}" target="_blank" rel="noopener">${escHtml(title)}</a></h3>
+    ${summary ? `<p class="desc">${escHtml(truncate(summary, 200))}</p>` : ""}
+    <div class="meta">
+      ${dateStr ? `<span class="meta-tag event-date">🗓 ${escHtml(dateStr)}</span>` : ""}
+      ${location ? `<span class="meta-tag event-loc">📍 ${escHtml(truncate(location, 40))}</span>` : ""}
+      ${tags.slice(0, 3).map((t) => `<span class="meta-tag">${escHtml(t)}</span>`).join("")}
+    </div>
+  `;
   return card;
 }
 
